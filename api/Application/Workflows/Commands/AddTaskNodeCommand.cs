@@ -25,6 +25,13 @@ public sealed class AddTaskNodeCommandHandler(IApplicationDbContext db)
             .FirstOrDefaultAsync(r => r.Id == request.WorkflowRunId, cancellationToken)
             ?? throw new KeyNotFoundException($"WorkflowRun {request.WorkflowRunId} not found.");
 
+        // Idempotency (Phase 1.5 §3): a retried "expand the DAG" call from the
+        // Supervisor (e.g. after a network blip mid-expansion) must not create a
+        // duplicate node — node names are unique per run by convention.
+        var existing = run.Nodes.FirstOrDefault(n => n.Name == request.Name);
+        if (existing is not null)
+            return existing.Id;
+
         var node = run.AddNode(request.Name, request.TaskType, request.InputsJson, request.RequiresApproval);
 
         // Explicitly track the new child — EF Core's snapshot change detection for a

@@ -13,7 +13,7 @@ public sealed record TaskNodeDto(
 public sealed record TaskEdgeDto(Guid PredecessorNodeId, Guid SuccessorNodeId);
 
 public sealed record WorkflowRunDto(
-    Guid Id, Guid WorkspaceId, string Goal, string Status,
+    Guid Id, Guid WorkspaceId, Guid CorrelationId, string Goal, string Status,
     IReadOnlyCollection<TaskNodeDto> Nodes, IReadOnlyCollection<TaskEdgeDto> Edges);
 
 public sealed class GetWorkflowRunQueryHandler(IApplicationDbContext db)
@@ -29,7 +29,7 @@ public sealed class GetWorkflowRunQueryHandler(IApplicationDbContext db)
         if (run is null) return null;
 
         return new WorkflowRunDto(
-            run.Id, run.WorkspaceId, run.Goal, run.Status.ToString(),
+            run.Id, run.WorkspaceId, run.CorrelationId, run.Goal, run.Status.ToString(),
             run.Nodes.Select(n => new TaskNodeDto(
                 n.Id, n.Name, n.TaskType, n.Status.ToString(), n.AssignedAgentName,
                 n.Confidence, n.RiskLevel, n.AttemptCount)).ToList(),

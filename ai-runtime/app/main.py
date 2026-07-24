@@ -37,6 +37,7 @@ from app.supervisor.supervisor_agent import SupervisorAgent
 from app.tools.artifact_store_tool import ArtifactStoreTool
 from app.tools.filesystem_tool import FilesystemTool
 from app.tools.prompt_loader_tool import PromptLoaderTool
+from app.tools.prompt_registry import PromptRegistry
 from app.tools.registry import ToolRegistry
 
 logger = get_logger(__name__)
@@ -64,8 +65,8 @@ class Runtime:
         self.model_router = ModelRouter(settings)
 
         self.tools = ToolRegistry()
-        self.tools.register(FilesystemTool(root=Path("/data/workspace-files")))
-        self.tools.register(PromptLoaderTool(prompts_dir=Path(__file__).parent / "prompts"))
+        self.tools.register(FilesystemTool(root=Path(settings.workspace_files_root), max_bytes=settings.filesystem_max_bytes))
+        self.tools.register(PromptLoaderTool(registry=PromptRegistry(Path(__file__).parent / "prompts")))
         self.tools.register(ArtifactStoreTool(self.api))
 
         self.default_workspace_id: uuid.UUID | None = None
@@ -87,7 +88,7 @@ class Runtime:
                 memory=self.memory,
                 tools=self.tools,
                 event_bus=self.event_bus,
-                endpoint=f"http://ai-runtime:8000/agents/{agent_cls.name}",
+                endpoint=f"{self.settings.self_base_url}/agents/{agent_cls.name}",
                 model_router=self.model_router,
             )
             await agent.register(self.default_workspace_id)

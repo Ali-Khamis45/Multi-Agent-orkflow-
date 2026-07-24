@@ -33,8 +33,14 @@ class IntentEngine:
         self._router = model_router
         self._tools = tools
 
-    async def run(self, workspace_id: uuid.UUID, workflow_run_id: uuid.UUID, raw_input: str) -> uuid.UUID:
-        session_id = await self._api.start_intent_session(workspace_id, raw_input)
+    async def run(
+        self,
+        workspace_id: uuid.UUID,
+        workflow_run_id: uuid.UUID,
+        raw_input: str,
+        correlation_id: uuid.UUID | None = None,
+    ) -> uuid.UUID:
+        session_id = await self._api.start_intent_session(workspace_id, raw_input, correlation_id=correlation_id)
 
         rendered = await self._tools.invoke(
             "prompt_loader", [], {"template": "intent_engine", "variables": {"raw_input": raw_input}}
@@ -72,6 +78,8 @@ class IntentEngine:
             owner_agent="intent-engine",
             content=structured_content,
             workflow_run_id=workflow_run_id,
+            correlation_id=correlation_id,
+            idempotency_key=f"{workflow_run_id}:StructuredRequirements",
         )
         await self._api.mark_intent_structured(session_id, artifact_id)
 

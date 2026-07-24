@@ -14,6 +14,18 @@ public class Artifact : Entity
     public Guid? WorkflowRunId { get; private set; }
     public Guid? TaskNodeId { get; private set; }
 
+    /// <summary>Threads one workflow execution across both runtimes and every
+    /// record it produces (Phase 1.5 §2 Correlation IDs).</summary>
+    public Guid? CorrelationId { get; private set; }
+
+    /// <summary>
+    /// Caller-supplied dedupe key (Phase 1.5 §3 Idempotency) — e.g. an agent
+    /// derives it from "{taskNodeId}:{artifactName}" so a retried produce_artifact
+    /// call returns the already-created artifact instead of a spurious new version.
+    /// Unique per WorkflowRun when present (see ArtifactConfiguration).
+    /// </summary>
+    public string? IdempotencyKey { get; private set; }
+
     public string Name { get; private set; } = default!;
     public ArtifactType Type { get; private set; }
     public string OwnerAgent { get; private set; } = default!;
@@ -36,7 +48,9 @@ public class Artifact : Entity
         Guid? workflowRunId = null,
         Guid? taskNodeId = null,
         Guid? previousVersionId = null,
-        int version = 1)
+        int version = 1,
+        Guid? correlationId = null,
+        string? idempotencyKey = null)
     {
         WorkspaceId = workspaceId;
         Name = name;
@@ -47,12 +61,16 @@ public class Artifact : Entity
         TaskNodeId = taskNodeId;
         PreviousVersionId = previousVersionId;
         Version = version;
+        CorrelationId = correlationId;
+        IdempotencyKey = idempotencyKey;
     }
 
-    public Artifact CreateNewVersion(string ownerAgent, string? content)
+    public Artifact CreateNewVersion(string ownerAgent, string? content, string? idempotencyKey = null)
     {
         Supersede();
-        return new Artifact(WorkspaceId, Name, Type, ownerAgent, content, WorkflowRunId, TaskNodeId, Id, Version + 1);
+        return new Artifact(
+            WorkspaceId, Name, Type, ownerAgent, content, WorkflowRunId, TaskNodeId, Id, Version + 1,
+            CorrelationId, idempotencyKey);
     }
 
     public void MarkFinal() => Status = ArtifactStatus.Final;

@@ -1,5 +1,6 @@
 using AiAgentsTeam.Application.Common.Interfaces;
 using AiAgentsTeam.Application.Scheduling;
+using AiAgentsTeam.Domain.Workflow;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,11 @@ public sealed class CompleteTaskCommandHandler(IApplicationDbContext db, ISchedu
             ?? throw new KeyNotFoundException($"WorkflowRun for task {request.TaskNodeId} not found.");
 
         var node = run.Nodes.First(n => n.Id == request.TaskNodeId);
+
+        // Idempotency (Phase 1.5 §3): a redelivered TaskCompleted for a node
+        // already Completed (or moved on some other way) must be a no-op.
+        if (node.Status is not (TaskNodeStatus.Dispatched or TaskNodeStatus.Running))
+            return;
 
         if (node.AssignedAgentName is not null)
         {

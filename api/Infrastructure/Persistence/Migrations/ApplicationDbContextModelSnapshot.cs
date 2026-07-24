@@ -112,8 +112,14 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                     b.Property<string>("Content")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -155,7 +161,13 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CorrelationId");
+
                     b.HasIndex("PreviousVersionId");
+
+                    b.HasIndex("WorkflowRunId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("\"IdempotencyKey\" IS NOT NULL");
 
                     b.HasIndex("WorkspaceId", "Name");
 
@@ -166,6 +178,9 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CorrelationId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -185,9 +200,73 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CorrelationId");
+
                     b.HasIndex("WorkflowRunId");
 
                     b.ToTable("checkpoints", (string)null);
+                });
+
+            modelBuilder.Entity("AiAgentsTeam.Domain.Failures.ExecutionFailure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Agent")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Recoverable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Retryable")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Stack")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SuggestedAction")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TaskNodeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WorkflowRunId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("TaskNodeId");
+
+                    b.HasIndex("WorkflowRunId");
+
+                    b.HasIndex("Agent", "Category");
+
+                    b.ToTable("execution_failures", (string)null);
                 });
 
             modelBuilder.Entity("AiAgentsTeam.Domain.Intent.ClarificationAnswer", b =>
@@ -229,6 +308,9 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                     b.Property<double?>("ComplexityScore")
                         .HasColumnType("double precision");
 
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -258,6 +340,8 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CorrelationId");
+
                     b.HasIndex("WorkspaceId");
 
                     b.ToTable("intent_sessions", (string)null);
@@ -272,6 +356,9 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -309,6 +396,8 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CorrelationId");
+
                     b.HasIndex("WorkspaceId", "Layer", "ScopeRef");
 
                     b.ToTable("memory_items", (string)null);
@@ -325,27 +414,70 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<double?>("Confidence")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("CostEstimate")
+                        .HasColumnType("double precision");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("DurationMs")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
                     b.Property<string>("InputJson")
                         .HasColumnType("text");
 
+                    b.Property<int>("MemoryReads")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MemoryWrites")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ModelUsed")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("OutputJson")
                         .HasColumnType("text");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Stage")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("TaskNodeId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("Tokens")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ToolCalls")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("WorkflowRunId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Agent");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("WorkflowRunId");
 
                     b.HasIndex("TaskNodeId", "Stage");
 
@@ -360,6 +492,9 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
 
                     b.Property<double>("Confidence")
                         .HasColumnType("double precision");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -384,6 +519,8 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
 
                     b.HasIndex("WorkflowRunId");
 
@@ -434,6 +571,9 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                     b.Property<double?>("Confidence")
                         .HasColumnType("double precision");
 
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -483,6 +623,11 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("WorkflowRunId", "Name")
+                        .IsUnique();
+
                     b.HasIndex("WorkflowRunId", "Status");
 
                     b.ToTable("task_nodes", (string)null);
@@ -522,6 +667,9 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -544,6 +692,8 @@ namespace AiAgentsTeam.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
 
                     b.HasIndex("WorkspaceId");
 

@@ -10,6 +10,8 @@ namespace AiAgentsTeam.Domain.Supervisor;
 public class SupervisorDecision : Entity
 {
     public Guid WorkflowRunId { get; private set; }
+    /// <summary>Always derived server-side from the parent WorkflowRun (Phase 1.5 §2) — never client-supplied.</summary>
+    public Guid CorrelationId { get; private set; }
     public SupervisorDecisionType DecisionType { get; private set; }
     public string InputSnapshotJson { get; private set; } = default!;
     public string Rationale { get; private set; } = default!;
@@ -20,6 +22,7 @@ public class SupervisorDecision : Entity
 
     public SupervisorDecision(
         Guid workflowRunId,
+        Guid correlationId,
         SupervisorDecisionType decisionType,
         string inputSnapshotJson,
         string rationale,
@@ -27,6 +30,7 @@ public class SupervisorDecision : Entity
         string? targetNodeIdsJson = null)
     {
         WorkflowRunId = workflowRunId;
+        CorrelationId = correlationId;
         DecisionType = decisionType;
         InputSnapshotJson = inputSnapshotJson;
         Rationale = rationale;

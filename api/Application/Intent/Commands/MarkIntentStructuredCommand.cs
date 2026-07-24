@@ -23,6 +23,7 @@ public sealed class MarkIntentStructuredCommandHandler(IApplicationDbContext db,
         {
             Type = EventTypes.RequirementsStructured,
             WorkspaceId = session.WorkspaceId,
+            CorrelationId = session.CorrelationId,
             ProducedBy = "intent-engine",
             PayloadJson = System.Text.Json.JsonSerializer.Serialize(new
             {

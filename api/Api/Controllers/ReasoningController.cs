@@ -6,19 +6,37 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AiAgentsTeam.Api.Controllers;
 
-/// <summary>Reasoning Engine trace endpoints (ARCHITECTURE_EXTENSION.md §E6) — every agent's 12-stage pipeline.</summary>
+/// <summary>Reasoning Engine trace endpoints (ARCHITECTURE_EXTENSION.md §E6, Phase 1.5 §1) — every agent's 12-stage pipeline.</summary>
 [ApiController]
 [Route("api/reasoning")]
 public sealed class ReasoningController(ISender sender) : ControllerBase
 {
     public sealed record RecordTraceRequest(
-        Guid TaskNodeId, string Agent, ReasoningStage Stage, string? InputJson, string? OutputJson, long DurationMs);
+        Guid TaskNodeId,
+        string Agent,
+        ReasoningStage Stage,
+        DateTimeOffset StartedAt,
+        long DurationMs,
+        string? InputJson,
+        string? OutputJson,
+        int? Tokens,
+        double? Confidence,
+        string? ModelUsed,
+        int RetryCount,
+        int MemoryReads,
+        int MemoryWrites,
+        int ToolCalls,
+        double? CostEstimate,
+        string? ErrorMessage);
 
     [HttpPost("traces")]
     public async Task<ActionResult<Guid>> RecordTrace(RecordTraceRequest request, CancellationToken ct)
     {
         var id = await sender.Send(new RecordReasoningTraceCommand(
-            request.TaskNodeId, request.Agent, request.Stage, request.InputJson, request.OutputJson, request.DurationMs), ct);
+            request.TaskNodeId, request.Agent, request.Stage, request.StartedAt, request.DurationMs,
+            request.InputJson, request.OutputJson, request.Tokens, request.Confidence, request.ModelUsed,
+            request.RetryCount, request.MemoryReads, request.MemoryWrites, request.ToolCalls,
+            request.CostEstimate, request.ErrorMessage), ct);
         return Ok(id);
     }
 

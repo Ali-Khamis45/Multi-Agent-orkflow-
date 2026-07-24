@@ -10,6 +10,7 @@ namespace AiAgentsTeam.Domain.Intent;
 public class IntentSession : Entity
 {
     public Guid WorkspaceId { get; private set; }
+    public Guid CorrelationId { get; private set; }
     public string RawInput { get; private set; } = default!;
     public IntentSessionStatus Status { get; private set; } = IntentSessionStatus.Analyzing;
 
@@ -25,10 +26,11 @@ public class IntentSession : Entity
 
     private IntentSession() { }
 
-    public IntentSession(Guid workspaceId, string rawInput)
+    public IntentSession(Guid workspaceId, string rawInput, Guid? correlationId = null)
     {
         WorkspaceId = workspaceId;
         RawInput = rawInput;
+        CorrelationId = correlationId ?? Guid.NewGuid();
     }
 
     public void RecordAnalysis(

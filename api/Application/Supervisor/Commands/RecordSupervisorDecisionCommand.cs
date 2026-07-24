@@ -10,7 +10,8 @@ namespace AiAgentsTeam.Application.Supervisor.Commands;
 /// §E1) — e.g. "expand DAG post-BA", "retry node X on a different agent". This never
 /// mutates workflow state itself; the Supervisor still calls the ordinary Workflow
 /// commands (AddTaskNode, StartWorkflowRun, ...) to act. This is the "why," logged
-/// separately from the "what."
+/// separately from the "what." CorrelationId (Phase 1.5 §2) is always derived
+/// server-side from the parent WorkflowRun.
 /// </summary>
 public sealed record RecordSupervisorDecisionCommand(
     Guid WorkflowRunId,
@@ -25,20 +26,22 @@ public sealed class RecordSupervisorDecisionCommandHandler(IApplicationDbContext
 {
     public async Task<Guid> Handle(RecordSupervisorDecisionCommand request, CancellationToken cancellationToken)
     {
+        var run = await db.WorkflowRuns.FindAsync([request.WorkflowRunId], cancellationToken)
+            ?? throw new KeyNotFoundException($"WorkflowRun {request.WorkflowRunId} not found.");
+
         var decision = new SupervisorDecision(
-            request.WorkflowRunId, request.DecisionType, request.InputSnapshotJson,
+            request.WorkflowRunId, run.CorrelationId, request.DecisionType, request.InputSnapshotJson,
             request.Rationale, request.Confidence, request.TargetNodeIdsJson);
 
         db.SupervisorDecisions.Add(decision);
         await db.SaveChangesAsync(cancellationToken);
 
-        var run = await db.WorkflowRuns.FindAsync([request.WorkflowRunId], cancellationToken);
-
         await eventBus.PublishAsync(new EventEnvelope
         {
             Type = EventTypes.SupervisorDirectiveIssued,
-            WorkspaceId = run?.WorkspaceId ?? Guid.Empty,
+            WorkspaceId = run.WorkspaceId,
             WorkflowRunId = request.WorkflowRunId,
+            CorrelationId = run.CorrelationId,
             ProducedBy = "supervisor",
             PayloadJson = System.Text.Json.JsonSerializer.Serialize(new
             {

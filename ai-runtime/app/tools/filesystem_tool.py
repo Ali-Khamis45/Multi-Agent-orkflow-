@@ -1,6 +1,8 @@
 """Filesystem tool (ARCHITECTURE.md §8 initial tool set). Sandboxed to one root
 directory per workspace so an agent can never traverse outside its project's
-working copy — the concrete enforcement of the `filesystem` permission scope.
+working copy. Path containment and size limits are enforced by the shared
+`app.tools.sandbox` module (Phase 1.5 §7) so future filesystem-adjacent tools
+inherit the identical security model rather than reimplementing it.
 """
 
 from __future__ import annotations
@@ -9,11 +11,13 @@ from pathlib import Path
 from typing import Any
 
 from app.tools.base import Tool, ToolError, ToolMetadata, ToolResult
+from app.tools.sandbox import DEFAULT_MAX_BYTES, enforce_max_size, resolve_sandboxed_path
 
 
 class FilesystemTool(Tool):
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, max_bytes: int = DEFAULT_MAX_BYTES) -> None:
         self._root = root
+        self._max_bytes = max_bytes
         self._root.mkdir(parents=True, exist_ok=True)
 
     @property
@@ -32,20 +36,16 @@ class FilesystemTool(Tool):
             required_permission="filesystem",
         )
 
-    def _resolve(self, relative_path: str) -> Path:
-        target = (self._root / relative_path).resolve()
-        if self._root not in target.parents and target != self._root:
-            raise ToolError(f"Path '{relative_path}' escapes the sandboxed workspace root.")
-        return target
-
     async def execute(self, params: dict[str, Any]) -> ToolResult:
         operation = params["operation"]
-        path = self._resolve(params["path"])
+        path = resolve_sandboxed_path(self._root, params["path"])
 
         if operation == "write":
+            content = params.get("content", "")
+            enforce_max_size(content, self._max_bytes)
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(params.get("content", ""), encoding="utf-8")
-            return ToolResult(success=True, output={"bytesWritten": len(params.get("content", ""))})
+            path.write_text(content, encoding="utf-8")
+            return ToolResult(success=True, output={"bytesWritten": len(content.encode("utf-8"))})
 
         if operation == "read":
             if not path.exists():

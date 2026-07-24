@@ -13,14 +13,14 @@ public sealed class MemoryController(ISender sender) : ControllerBase
 {
     public sealed record WriteMemoryRequest(
         Guid WorkspaceId, MemoryLayer Layer, Guid ScopeRef, MemoryKind Kind, string Content,
-        Guid? SourceArtifactId, DateTimeOffset? TtlAt);
+        Guid? SourceArtifactId, DateTimeOffset? TtlAt, Guid? CorrelationId = null);
 
     [HttpPost]
     public async Task<ActionResult<Guid>> Write(WriteMemoryRequest request, CancellationToken ct)
     {
         var id = await sender.Send(new WriteMemoryItemCommand(
             request.WorkspaceId, request.Layer, request.ScopeRef, request.Kind, request.Content,
-            request.SourceArtifactId, request.TtlAt), ct);
+            request.SourceArtifactId, request.TtlAt, request.CorrelationId), ct);
         return Ok(id);
     }
 

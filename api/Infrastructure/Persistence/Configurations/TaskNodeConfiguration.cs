@@ -15,5 +15,11 @@ public class TaskNodeConfiguration : IEntityTypeConfiguration<TaskNode>
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.Level).HasConversion<string>().HasMaxLength(20);
         builder.HasIndex(x => new { x.WorkflowRunId, x.Status });
+
+        // Idempotency (Phase 1.5 §3) defense-in-depth: even under a race between
+        // two concurrent AddTaskNodeCommand calls that both miss the in-memory
+        // existing-name check, the database rejects the second insert outright.
+        builder.HasIndex(x => new { x.WorkflowRunId, x.Name }).IsUnique();
+        builder.HasIndex(x => x.CorrelationId);
     }
 }

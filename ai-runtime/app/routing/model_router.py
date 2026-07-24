@@ -36,6 +36,18 @@ AGENT_MODEL_PREFERENCE: dict[str, list[str]] = {
 }
 DEFAULT_PREFERENCE = ["anthropic", "openai", "gemini", "ollama"]
 
+# Cost Efficiency placeholder (ARCHITECTURE_EXTENSION.md §E7/§E15) — rough,
+# illustrative $-per-1K-tokens rates, not each provider's actual current
+# pricing. Good enough to produce a non-zero, comparable CostEstimate signal
+# per stage until a real pricing table/billing integration exists.
+_PLACEHOLDER_PRICE_PER_1K_TOKENS: dict[str, float] = {
+    "anthropic": 0.015,
+    "openai": 0.01,
+    "gemini": 0.007,
+    "ollama": 0.0,
+    "mock": 0.0,
+}
+
 
 @dataclass
 class ModelResponse:
@@ -43,6 +55,8 @@ class ModelResponse:
     provider: str
     model: str
     fallback_triggered: bool
+    tokens: int
+    cost_estimate: float
 
 
 class ModelRouter:
@@ -68,8 +82,12 @@ class ModelRouter:
         fallback_triggered = False
         for provider in configured:
             try:
-                text, model = await self._invoke(provider, system_prompt, user_prompt)
-                return ModelResponse(text=text, provider=provider, model=model, fallback_triggered=fallback_triggered)
+                text, model, tokens = await self._invoke(provider, system_prompt, user_prompt)
+                cost = round(tokens / 1000 * _PLACEHOLDER_PRICE_PER_1K_TOKENS.get(provider, 0.0), 6)
+                return ModelResponse(
+                    text=text, provider=provider, model=model,
+                    fallback_triggered=fallback_triggered, tokens=tokens, cost_estimate=cost,
+                )
             except Exception:
                 logger.exception("model provider failed; trying next", extra={"fields": {"provider": provider}})
                 fallback_triggered = True
@@ -77,14 +95,17 @@ class ModelRouter:
 
         # No provider configured/reachable — deterministic mock keeps the
         # pipeline runnable end-to-end (this sandbox has no LLM credentials).
+        text = self._mock_completion(agent_capability, user_prompt)
         return ModelResponse(
-            text=self._mock_completion(agent_capability, user_prompt),
+            text=text,
             provider="mock",
             model="mock-deterministic",
             fallback_triggered=len(configured) > 0,
+            tokens=self._estimate_tokens(text),
+            cost_estimate=0.0,
         )
 
-    async def _invoke(self, provider: str, system_prompt: str, user_prompt: str) -> tuple[str, str]:
+    async def _invoke(self, provider: str, system_prompt: str, user_prompt: str) -> tuple[str, str, int]:
         if provider == "anthropic":
             return await self._invoke_anthropic(system_prompt, user_prompt)
         if provider == "openai":
@@ -95,7 +116,13 @@ class ModelRouter:
             return await self._invoke_ollama(system_prompt, user_prompt)
         raise ValueError(f"Unknown provider '{provider}'")
 
-    async def _invoke_anthropic(self, system_prompt: str, user_prompt: str) -> tuple[str, str]:
+    @staticmethod
+    def _estimate_tokens(text: str) -> int:
+        """~4 characters/token is a common rough estimate — used only when a
+        provider response doesn't report real usage (Ollama today)."""
+        return max(1, len(text) // 4)
+
+    async def _invoke_anthropic(self, system_prompt: str, user_prompt: str) -> tuple[str, str, int]:
         model = "claude-sonnet-5"
         r = await self._http.post(
             "https://api.anthropic.com/v1/messages",
@@ -113,9 +140,12 @@ class ModelRouter:
         )
         r.raise_for_status()
         data = r.json()
-        return "".join(block.get("text", "") for block in data.get("content", [])), model
+        text = "".join(block.get("text", "") for block in data.get("content", []))
+        usage = data.get("usage", {})
+        tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0) or self._estimate_tokens(text)
+        return text, model, tokens
 
-    async def _invoke_openai(self, system_prompt: str, user_prompt: str) -> tuple[str, str]:
+    async def _invoke_openai(self, system_prompt: str, user_prompt: str) -> tuple[str, str, int]:
         model = "gpt-5"
         r = await self._http.post(
             "https://api.openai.com/v1/chat/completions",
@@ -130,9 +160,11 @@ class ModelRouter:
         )
         r.raise_for_status()
         data = r.json()
-        return data["choices"][0]["message"]["content"], model
+        text = data["choices"][0]["message"]["content"]
+        tokens = data.get("usage", {}).get("total_tokens") or self._estimate_tokens(text)
+        return text, model, tokens
 
-    async def _invoke_gemini(self, system_prompt: str, user_prompt: str) -> tuple[str, str]:
+    async def _invoke_gemini(self, system_prompt: str, user_prompt: str) -> tuple[str, str, int]:
         model = "gemini-2.5-pro"
         r = await self._http.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
@@ -145,16 +177,20 @@ class ModelRouter:
         r.raise_for_status()
         data = r.json()
         text = "".join(part.get("text", "") for part in data["candidates"][0]["content"]["parts"])
-        return text, model
+        tokens = data.get("usageMetadata", {}).get("totalTokenCount") or self._estimate_tokens(text)
+        return text, model, tokens
 
-    async def _invoke_ollama(self, system_prompt: str, user_prompt: str) -> tuple[str, str]:
+    async def _invoke_ollama(self, system_prompt: str, user_prompt: str) -> tuple[str, str, int]:
         model = "llama3"
         r = await self._http.post(
             f"{self._settings.ollama_host}/api/generate",
             json={"model": model, "prompt": f"{system_prompt}\n\n{user_prompt}", "stream": False},
         )
         r.raise_for_status()
-        return r.json()["response"], model
+        data = r.json()
+        text = data["response"]
+        tokens = (data.get("prompt_eval_count", 0) + data.get("eval_count", 0)) or self._estimate_tokens(text)
+        return text, model, tokens
 
     @staticmethod
     def _mock_completion(agent_capability: str, user_prompt: str) -> str:

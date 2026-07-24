@@ -26,6 +26,7 @@ logger = get_logger(__name__)
 @dataclass
 class _RunState:
     workspace_id: uuid.UUID
+    correlation_id: uuid.UUID
     goal: str
     node_ids: dict[str, uuid.UUID] = field(default_factory=dict)  # friendly name -> TaskNodeId
     artifacts: dict[str, str] = field(default_factory=dict)  # friendly name -> artifactId
@@ -40,12 +41,20 @@ class SupervisorAgent:
         self._runs: dict[uuid.UUID, _RunState] = {}
 
     async def kickoff(self, workspace_id: uuid.UUID, raw_input: str) -> uuid.UUID:
-        """User Request -> Intent Engine -> Business Analyst -> (Supervisor builds the rest)."""
-        run_id = await self._api.create_workflow_run(workspace_id, goal=raw_input)
-        state = _RunState(workspace_id=workspace_id, goal=raw_input)
+        """User Request -> Intent Engine -> Business Analyst -> (Supervisor builds the rest).
+
+        Mints the CorrelationId (Phase 1.5 §2) here — the earliest point in the
+        whole execution — and threads it through every subsequent call this
+        workflow run makes, across both runtimes.
+        """
+        correlation_id = uuid.uuid4()
+        run_id = await self._api.create_workflow_run(workspace_id, goal=raw_input, correlation_id=correlation_id)
+        state = _RunState(workspace_id=workspace_id, correlation_id=correlation_id, goal=raw_input)
         self._runs[run_id] = state
 
-        structured_requirements_id = await self._intent_engine.run(workspace_id, run_id, raw_input)
+        structured_requirements_id = await self._intent_engine.run(
+            workspace_id, run_id, raw_input, correlation_id=correlation_id
+        )
         state.artifacts["StructuredRequirements"] = str(structured_requirements_id)
 
         ba_id = await self._api.add_task_node(
@@ -171,6 +180,8 @@ class SupervisorAgent:
             owner_agent="supervisor",
             content=content,
             workflow_run_id=run_id,
+            correlation_id=state.correlation_id,
+            idempotency_key=f"{run_id}:ExecutionSummary",
         )
         logger.info("workflow finalized", extra={"fields": {"runId": str(run_id)}})
 

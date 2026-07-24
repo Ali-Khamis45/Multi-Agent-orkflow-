@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
 using AiAgentsTeam.Api.EventRelay;
 using AiAgentsTeam.Api.Hubs;
+using AiAgentsTeam.Api.Middleware;
 using AiAgentsTeam.Application;
+using AiAgentsTeam.Application.Scheduling;
 using AiAgentsTeam.Infrastructure;
 using AiAgentsTeam.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +22,10 @@ builder.Services.AddSignalR();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<SignalRRelayHostedService>();
+
+// Configuration Layer (Phase 1.5 §9): retry policy is an operational tuning knob,
+// bound from appsettings/env per environment rather than a hardcoded constant.
+builder.Services.Configure<SchedulerOptions>(builder.Configuration.GetSection(SchedulerOptions.SectionName));
 
 builder.Services.AddCors(options =>
 {
@@ -43,6 +49,8 @@ if (app.Environment.IsDevelopment())
     db.Database.Migrate();
 }
 
+app.UseMiddleware<ValidationExceptionMiddleware>();
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseCors();
 app.UseHttpsRedirection();
 app.UseAuthorization();

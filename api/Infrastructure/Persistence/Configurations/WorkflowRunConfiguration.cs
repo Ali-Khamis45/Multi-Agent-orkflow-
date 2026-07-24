@@ -13,6 +13,7 @@ public class WorkflowRunConfiguration : IEntityTypeConfiguration<WorkflowRun>
         builder.Property(x => x.Goal).IsRequired();
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
         builder.HasIndex(x => x.WorkspaceId);
+        builder.HasIndex(x => x.CorrelationId);
 
         // WorkflowRun is the aggregate root for TaskNode/TaskEdge (ARCHITECTURE.md §5.1);
         // Nodes/Edges are exposed as IReadOnlyCollection with no public setter, so EF Core

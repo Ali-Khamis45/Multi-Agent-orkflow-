@@ -13,6 +13,7 @@ public class IntentSessionConfiguration : IEntityTypeConfiguration<IntentSession
         builder.Property(x => x.RawInput).IsRequired();
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
         builder.HasIndex(x => x.WorkspaceId);
+        builder.HasIndex(x => x.CorrelationId);
 
         builder.HasMany(x => x.Answers)
             .WithOne()

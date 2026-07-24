@@ -11,6 +11,7 @@ namespace AiAgentsTeam.Domain.Memory;
 public class MemoryItem : Entity
 {
     public Guid WorkspaceId { get; private set; }
+    public Guid? CorrelationId { get; private set; }
     public MemoryLayer Layer { get; private set; }
     public Guid ScopeRef { get; private set; }
     public MemoryKind Kind { get; private set; }
@@ -30,7 +31,8 @@ public class MemoryItem : Entity
         MemoryKind kind,
         string content,
         Guid? sourceArtifactId = null,
-        DateTimeOffset? ttlAt = null)
+        DateTimeOffset? ttlAt = null,
+        Guid? correlationId = null)
     {
         WorkspaceId = workspaceId;
         Layer = layer;
@@ -39,6 +41,7 @@ public class MemoryItem : Entity
         Content = content;
         SourceArtifactId = sourceArtifactId;
         TtlAt = ttlAt;
+        CorrelationId = correlationId;
     }
 
     public void Touch(double score) => Score = score;

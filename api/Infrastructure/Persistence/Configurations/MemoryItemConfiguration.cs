@@ -14,5 +14,6 @@ public class MemoryItemConfiguration : IEntityTypeConfiguration<MemoryItem>
         builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(30);
         builder.Property(x => x.Content).IsRequired();
         builder.HasIndex(x => new { x.WorkspaceId, x.Layer, x.ScopeRef });
+        builder.HasIndex(x => x.CorrelationId);
     }
 }

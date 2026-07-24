@@ -14,6 +14,9 @@ public class TaskNode : Entity
     public TaskLevel Level { get; private set; } = TaskLevel.Task;
     public Guid? ParentNodeId { get; private set; }
 
+    /// <summary>Inherited from the parent WorkflowRun at creation (Phase 1.5 §2).</summary>
+    public Guid CorrelationId { get; private set; }
+
     public string Name { get; private set; } = default!;
     public string TaskType { get; private set; } = default!;
     public TaskNodeStatus Status { get; private set; } = TaskNodeStatus.Pending;
@@ -37,6 +40,7 @@ public class TaskNode : Entity
         string name,
         string taskType,
         string inputsJson,
+        Guid correlationId,
         bool requiresApproval = false,
         TaskLevel level = TaskLevel.Task,
         Guid? parentNodeId = null)
@@ -45,10 +49,11 @@ public class TaskNode : Entity
         Name = name;
         TaskType = taskType;
         InputsJson = inputsJson;
+        CorrelationId = correlationId;
         RequiresApproval = requiresApproval;
         Level = level;
         ParentNodeId = parentNodeId;
-        Status = requiresApproval ? TaskNodeStatus.Pending : TaskNodeStatus.Pending;
+        Status = TaskNodeStatus.Pending;
     }
 
     public void MarkReady() => Transition(TaskNodeStatus.Ready);

@@ -13,5 +13,6 @@ public class CheckpointConfiguration : IEntityTypeConfiguration<Checkpoint>
         builder.Property(x => x.Label).IsRequired().HasMaxLength(200);
         builder.Property(x => x.SnapshotJson).IsRequired();
         builder.HasIndex(x => x.WorkflowRunId);
+        builder.HasIndex(x => x.CorrelationId);
     }
 }

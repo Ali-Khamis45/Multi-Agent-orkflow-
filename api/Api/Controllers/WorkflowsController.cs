@@ -10,12 +10,12 @@ namespace AiAgentsTeam.Api.Controllers;
 [Route("api/workflows")]
 public sealed class WorkflowsController(ISender sender) : ControllerBase
 {
-    public sealed record CreateRunRequest(Guid WorkspaceId, string Goal);
+    public sealed record CreateRunRequest(Guid WorkspaceId, string Goal, Guid? CorrelationId = null);
 
     [HttpPost("runs")]
     public async Task<ActionResult<Guid>> CreateRun(CreateRunRequest request, CancellationToken ct)
     {
-        var id = await sender.Send(new CreateWorkflowRunCommand(request.WorkspaceId, request.Goal), ct);
+        var id = await sender.Send(new CreateWorkflowRunCommand(request.WorkspaceId, request.Goal, request.CorrelationId), ct);
         return Ok(id);
     }
 

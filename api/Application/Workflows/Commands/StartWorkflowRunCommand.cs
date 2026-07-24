@@ -28,6 +28,7 @@ public sealed class StartWorkflowRunCommandHandler(
             Type = EventTypes.WorkflowRunStarted,
             WorkspaceId = run.WorkspaceId,
             WorkflowRunId = run.Id,
+            CorrelationId = run.CorrelationId,
             ProducedBy = "supervisor",
             PayloadJson = JsonSerializer.Serialize(new { run.Id, run.Goal })
         }, cancellationToken);

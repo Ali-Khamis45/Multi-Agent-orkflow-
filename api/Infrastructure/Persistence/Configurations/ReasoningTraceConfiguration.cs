@@ -12,6 +12,10 @@ public class ReasoningTraceConfiguration : IEntityTypeConfiguration<ReasoningTra
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Agent).IsRequired().HasMaxLength(200);
         builder.Property(x => x.Stage).HasConversion<string>().HasMaxLength(30);
+        builder.Property(x => x.ModelUsed).HasMaxLength(100);
         builder.HasIndex(x => new { x.TaskNodeId, x.Stage });
+        builder.HasIndex(x => x.WorkflowRunId);
+        builder.HasIndex(x => x.CorrelationId);
+        builder.HasIndex(x => x.Agent);
     }
 }

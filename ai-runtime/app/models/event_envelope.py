@@ -21,6 +21,7 @@ class EventEnvelope(BaseModel):
     workspace_id: uuid.UUID = Field(alias="WorkspaceId")
     workflow_run_id: uuid.UUID | None = Field(default=None, alias="WorkflowRunId")
     task_id: uuid.UUID | None = Field(default=None, alias="TaskId")
+    correlation_id: uuid.UUID | None = Field(default=None, alias="CorrelationId")
     produced_by: str = Field(alias="ProducedBy")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), alias="Timestamp")
     payload_json: str = Field(alias="PayloadJson")

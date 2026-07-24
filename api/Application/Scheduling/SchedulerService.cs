@@ -2,6 +2,7 @@ using System.Text.Json;
 using AiAgentsTeam.Application.Common.Interfaces;
 using AiAgentsTeam.Application.Common.Messaging;
 using AiAgentsTeam.Domain.Agents;
+using AiAgentsTeam.Domain.Checkpoints;
 using AiAgentsTeam.Domain.Workflow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -27,26 +28,60 @@ public sealed class SchedulerService(IApplicationDbContext db, IEventBus eventBu
         // simply land in the same ready set with no edge between them.
         foreach (var node in readyNodes)
         {
-            await TryDispatchAsync(run.WorkspaceId, node, cancellationToken);
+            await TryDispatchAsync(run, node, cancellationToken);
         }
+
+        var label = "scheduling-pass";
 
         if (run.IsComplete())
         {
             run.Complete();
+            label = "workflow-completed";
             await eventBus.PublishAsync(new EventEnvelope
             {
                 Type = EventTypes.WorkflowRunCompleted,
                 WorkspaceId = run.WorkspaceId,
                 WorkflowRunId = run.Id,
+                CorrelationId = run.CorrelationId,
                 ProducedBy = "scheduler",
                 PayloadJson = JsonSerializer.Serialize(new { WorkflowRunId = run.Id })
             }, cancellationToken);
         }
 
+        // Execution Snapshots (Phase 1.5 §5): a lightweight Checkpoint after every
+        // scheduling pass — enough for future Resume/Replay/Debugging to read this
+        // table directly, no storage redesign needed.
+        db.Checkpoints.Add(BuildCheckpoint(run, label));
+
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task TryDispatchAsync(Guid workspaceId, TaskNode node, CancellationToken cancellationToken)
+    private static Checkpoint BuildCheckpoint(WorkflowRun run, string label)
+    {
+        var snapshot = new
+        {
+            run.Id,
+            run.WorkspaceId,
+            Status = run.Status.ToString(),
+            Nodes = run.Nodes.Select(n => new
+            {
+                n.Id,
+                n.Name,
+                n.TaskType,
+                Status = n.Status.ToString(),
+                n.AssignedAgentName,
+                n.Confidence,
+                n.RiskLevel,
+                n.AttemptCount
+            }),
+            Edges = run.Edges.Select(e => new { e.PredecessorNodeId, e.SuccessorNodeId }),
+            SnapshottedAt = DateTimeOffset.UtcNow
+        };
+
+        return new Checkpoint(run.Id, run.CorrelationId, label, JsonSerializer.Serialize(snapshot));
+    }
+
+    private async Task TryDispatchAsync(WorkflowRun run, TaskNode node, CancellationToken cancellationToken)
     {
         // §5.2 step 2: resolve candidates by supportedTasks, filter by availability,
         // rank by priority then current load (fewest in-flight tasks).
@@ -74,9 +109,10 @@ public sealed class SchedulerService(IApplicationDbContext db, IEventBus eventBu
         await eventBus.PublishAsync(new EventEnvelope
         {
             Type = EventTypes.TaskDispatched,
-            WorkspaceId = workspaceId,
+            WorkspaceId = run.WorkspaceId,
             WorkflowRunId = node.WorkflowRunId,
             TaskId = node.Id,
+            CorrelationId = run.CorrelationId,
             ProducedBy = "scheduler",
             PayloadJson = JsonSerializer.Serialize(new
             {
@@ -86,7 +122,8 @@ public sealed class SchedulerService(IApplicationDbContext db, IEventBus eventBu
                 node.Name,
                 InputsJson = node.InputsJson,
                 AssignedAgent = resolved.Name,
-                AgentEndpoint = resolved.Endpoint
+                AgentEndpoint = resolved.Endpoint,
+                node.AttemptCount
             })
         }, cancellationToken);
     }

@@ -16,6 +16,15 @@ public class WorkflowRun : Entity
     public WorkflowRunStatus Status { get; private set; } = WorkflowRunStatus.Planning;
     public DateTimeOffset UpdatedAt { get; private set; } = DateTimeOffset.UtcNow;
 
+    /// <summary>
+    /// Root of the Phase 1.5 Correlation ID chain (§2) — one execution's identity
+    /// across ASP.NET, Redis, the Python Runtime, SignalR, and any future worker.
+    /// Every TaskNode/TaskEdge/Checkpoint created under this run inherits it; every
+    /// Artifact/ReasoningTrace/SupervisorDecision/MemoryItem the AI Runtime writes
+    /// during this execution carries it explicitly on the same call.
+    /// </summary>
+    public Guid CorrelationId { get; private set; }
+
     private readonly List<TaskNode> _nodes = new();
     public IReadOnlyCollection<TaskNode> Nodes => _nodes.AsReadOnly();
 
@@ -24,16 +33,17 @@ public class WorkflowRun : Entity
 
     private WorkflowRun() { }
 
-    public WorkflowRun(Guid workspaceId, string goal, Guid? workflowDefinitionId = null)
+    public WorkflowRun(Guid workspaceId, string goal, Guid? workflowDefinitionId = null, Guid? correlationId = null)
     {
         WorkspaceId = workspaceId;
         Goal = goal;
         WorkflowDefinitionId = workflowDefinitionId;
+        CorrelationId = correlationId ?? Guid.NewGuid();
     }
 
     public TaskNode AddNode(string name, string taskType, string inputsJson, bool requiresApproval = false)
     {
-        var node = new TaskNode(Id, name, taskType, inputsJson, requiresApproval);
+        var node = new TaskNode(Id, name, taskType, inputsJson, CorrelationId, requiresApproval);
         _nodes.Add(node);
         Touch();
         return node;

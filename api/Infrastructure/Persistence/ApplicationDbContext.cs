@@ -3,6 +3,7 @@ using AiAgentsTeam.Application.Common.Interfaces;
 using AiAgentsTeam.Domain.Agents;
 using AiAgentsTeam.Domain.Artifacts;
 using AiAgentsTeam.Domain.Checkpoints;
+using AiAgentsTeam.Domain.Failures;
 using AiAgentsTeam.Domain.Intent;
 using AiAgentsTeam.Domain.Memory;
 using AiAgentsTeam.Domain.Reasoning;
@@ -29,6 +30,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ReasoningTrace> ReasoningTraces => Set<ReasoningTrace>();
     public DbSet<IntentSession> IntentSessions => Set<IntentSession>();
     public DbSet<ClarificationAnswer> ClarificationAnswers => Set<ClarificationAnswer>();
+    public DbSet<ExecutionFailure> ExecutionFailures => Set<ExecutionFailure>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

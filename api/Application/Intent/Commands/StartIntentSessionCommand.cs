@@ -5,14 +5,14 @@ using MediatR;
 
 namespace AiAgentsTeam.Application.Intent.Commands;
 
-public sealed record StartIntentSessionCommand(Guid WorkspaceId, string RawInput) : IRequest<Guid>;
+public sealed record StartIntentSessionCommand(Guid WorkspaceId, string RawInput, Guid? CorrelationId = null) : IRequest<Guid>;
 
 public sealed class StartIntentSessionCommandHandler(IApplicationDbContext db, IEventBus eventBus)
     : IRequestHandler<StartIntentSessionCommand, Guid>
 {
     public async Task<Guid> Handle(StartIntentSessionCommand request, CancellationToken cancellationToken)
     {
-        var session = new IntentSession(request.WorkspaceId, request.RawInput);
+        var session = new IntentSession(request.WorkspaceId, request.RawInput, request.CorrelationId);
         db.IntentSessions.Add(session);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -20,6 +20,7 @@ public sealed class StartIntentSessionCommandHandler(IApplicationDbContext db, I
         {
             Type = EventTypes.IntentAnalysisStarted,
             WorkspaceId = request.WorkspaceId,
+            CorrelationId = session.CorrelationId,
             ProducedBy = "intent-engine",
             PayloadJson = System.Text.Json.JsonSerializer.Serialize(new { IntentSessionId = session.Id, request.RawInput })
         }, cancellationToken);

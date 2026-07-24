@@ -51,8 +51,11 @@ services:
       - api
       - redis
     environment:
+      ENVIRONMENT: Docker
       API_BASE_URL: "http://api:8080"
       REDIS_URL: "redis://redis:6379"
+      SELF_BASE_URL: "http://ai-runtime:8000"
+      WORKSPACE_FILES_ROOT: "/data/workspace-files"
       # ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY / OLLAMA_HOST:
       # leave unset to run fully on the Multi-Model Router's mock fallback
       # (ARCHITECTURE_EXTENSION.md §E7) — set any of them to use a real model.

@@ -10,11 +10,11 @@ namespace AiAgentsTeam.Api.Controllers;
 [Route("api/intent")]
 public sealed class IntentController(ISender sender) : ControllerBase
 {
-    public sealed record StartSessionRequest(Guid WorkspaceId, string RawInput);
+    public sealed record StartSessionRequest(Guid WorkspaceId, string RawInput, Guid? CorrelationId = null);
 
     [HttpPost("sessions")]
     public async Task<ActionResult<Guid>> Start(StartSessionRequest request, CancellationToken ct) =>
-        Ok(await sender.Send(new StartIntentSessionCommand(request.WorkspaceId, request.RawInput), ct));
+        Ok(await sender.Send(new StartIntentSessionCommand(request.WorkspaceId, request.RawInput, request.CorrelationId), ct));
 
     [HttpPost("sessions/{id:guid}/analysis")]
     public async Task<IActionResult> RecordAnalysis(Guid id, RecordIntentAnalysisBody body, CancellationToken ct)

@@ -1,4 +1,7 @@
-"""Runtime configuration, sourced entirely from environment variables.
+"""Runtime configuration, sourced entirely from environment variables — no
+value an operator might need to change between Development/Testing/
+Production/Docker/Local/Cloud is hardcoded in application code (Phase 1.5
+Configuration Layer hardening). See .env.example for the full variable list.
 
 Architecture rule (ARCHITECTURE.md §2 two-runtime split): this process never
 opens a database connection of its own. `api_base_url` is the only path to
@@ -14,8 +17,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="", case_sensitive=False)
 
+    environment: str = "Local"  # Local | Development | Testing | Docker | Production | Cloud
+
     api_base_url: str = "http://localhost:5080"
     redis_url: str = "redis://localhost:6380"
+
+    # How other processes (the .NET Scheduler, a future distributed cluster,
+    # §E16) reach *this* runtime's agents — was hardcoded as
+    # "http://ai-runtime:8000" in Milestone 2; now an operator can point it at
+    # whatever hostname/port this container is actually reachable on.
+    self_base_url: str = "http://localhost:8000"
+
+    # Filesystem tool sandbox root (§8 Tool Marketplace / Phase 1.5 §7 Tool
+    # Sandbox) — was hardcoded to "/data/workspace-files".
+    workspace_files_root: str = "./.data/workspace-files"
 
     # Multi-Model Router (ARCHITECTURE_EXTENSION.md §E7) provider credentials.
     # Any combination may be absent — the router falls back to the next
@@ -29,6 +44,9 @@ class Settings(BaseSettings):
     heartbeat_interval_seconds: float = 15.0
     consumer_group: str = "ai-runtime-agents"
     consumer_name: str = "ai-runtime-1"
+
+    # Tool sandbox hardening (Phase 1.5 §7).
+    filesystem_max_bytes: int = 1_000_000
 
     log_level: str = "INFO"
 

@@ -11,7 +11,7 @@ namespace AiAgentsTeam.Application.Memory.Commands;
 /// </summary>
 public sealed record WriteMemoryItemCommand(
     Guid WorkspaceId, MemoryLayer Layer, Guid ScopeRef, MemoryKind Kind, string Content,
-    Guid? SourceArtifactId, DateTimeOffset? TtlAt) : IRequest<Guid>;
+    Guid? SourceArtifactId, DateTimeOffset? TtlAt, Guid? CorrelationId = null) : IRequest<Guid>;
 
 public sealed class WriteMemoryItemCommandHandler(IApplicationDbContext db)
     : IRequestHandler<WriteMemoryItemCommand, Guid>
@@ -20,7 +20,7 @@ public sealed class WriteMemoryItemCommandHandler(IApplicationDbContext db)
     {
         var item = new MemoryItem(
             request.WorkspaceId, request.Layer, request.ScopeRef, request.Kind, request.Content,
-            request.SourceArtifactId, request.TtlAt);
+            request.SourceArtifactId, request.TtlAt, request.CorrelationId);
 
         db.MemoryItems.Add(item);
         await db.SaveChangesAsync(cancellationToken);

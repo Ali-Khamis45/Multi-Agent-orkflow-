@@ -41,9 +41,16 @@ class ApiClient:
         return r.json()
 
     # ---- Workflow Engine (§5, §23) ----
-    async def create_workflow_run(self, workspace_id: uuid.UUID, goal: str) -> uuid.UUID:
+    async def create_workflow_run(
+        self, workspace_id: uuid.UUID, goal: str, correlation_id: uuid.UUID | None = None
+    ) -> uuid.UUID:
         r = await self._http.post(
-            "/api/workflows/runs", json={"workspaceId": str(workspace_id), "goal": goal}
+            "/api/workflows/runs",
+            json={
+                "workspaceId": str(workspace_id),
+                "goal": goal,
+                "correlationId": str(correlation_id) if correlation_id else None,
+            },
         )
         r.raise_for_status()
         return uuid.UUID(r.json())
@@ -95,9 +102,16 @@ class ApiClient:
         return r.json()
 
     # ---- Intent Engine (§E2) ----
-    async def start_intent_session(self, workspace_id: uuid.UUID, raw_input: str) -> uuid.UUID:
+    async def start_intent_session(
+        self, workspace_id: uuid.UUID, raw_input: str, correlation_id: uuid.UUID | None = None
+    ) -> uuid.UUID:
         r = await self._http.post(
-            "/api/intent/sessions", json={"workspaceId": str(workspace_id), "rawInput": raw_input}
+            "/api/intent/sessions",
+            json={
+                "workspaceId": str(workspace_id),
+                "rawInput": raw_input,
+                "correlationId": str(correlation_id) if correlation_id else None,
+            },
         )
         r.raise_for_status()
         return uuid.UUID(r.json())
@@ -148,6 +162,8 @@ class ApiClient:
         workflow_run_id: uuid.UUID | None = None,
         task_node_id: uuid.UUID | None = None,
         previous_version_id: uuid.UUID | None = None,
+        correlation_id: uuid.UUID | None = None,
+        idempotency_key: str | None = None,
     ) -> uuid.UUID:
         r = await self._http.post(
             "/api/artifacts",
@@ -160,6 +176,8 @@ class ApiClient:
                 "workflowRunId": str(workflow_run_id) if workflow_run_id else None,
                 "taskNodeId": str(task_node_id) if task_node_id else None,
                 "previousVersionId": str(previous_version_id) if previous_version_id else None,
+                "correlationId": str(correlation_id) if correlation_id else None,
+                "idempotencyKey": idempotency_key,
             },
         )
         r.raise_for_status()
@@ -188,6 +206,7 @@ class ApiClient:
         kind: str,
         content: str,
         source_artifact_id: uuid.UUID | None = None,
+        correlation_id: uuid.UUID | None = None,
     ) -> uuid.UUID:
         r = await self._http.post(
             "/api/memory",
@@ -199,6 +218,7 @@ class ApiClient:
                 "content": content,
                 "sourceArtifactId": str(source_artifact_id) if source_artifact_id else None,
                 "ttlAt": None,
+                "correlationId": str(correlation_id) if correlation_id else None,
             },
         )
         r.raise_for_status()
@@ -214,15 +234,25 @@ class ApiClient:
         r.raise_for_status()
         return r.json()
 
-    # ---- Reasoning Engine traces (§E6) ----
+    # ---- Reasoning Engine traces / unified telemetry (§E6, Phase 1.5 §1) ----
     async def record_reasoning_trace(
         self,
         task_node_id: uuid.UUID,
         agent: str,
         stage: str,
-        input_json: str | None,
-        output_json: str | None,
+        started_at: str,
         duration_ms: int,
+        input_json: str | None = None,
+        output_json: str | None = None,
+        tokens: int | None = None,
+        confidence: float | None = None,
+        model_used: str | None = None,
+        retry_count: int = 0,
+        memory_reads: int = 0,
+        memory_writes: int = 0,
+        tool_calls: int = 0,
+        cost_estimate: float | None = None,
+        error_message: str | None = None,
     ) -> None:
         r = await self._http.post(
             "/api/reasoning/traces",
@@ -230,9 +260,19 @@ class ApiClient:
                 "taskNodeId": str(task_node_id),
                 "agent": agent,
                 "stage": stage,
+                "startedAt": started_at,
+                "durationMs": duration_ms,
                 "inputJson": input_json,
                 "outputJson": output_json,
-                "durationMs": duration_ms,
+                "tokens": tokens,
+                "confidence": confidence,
+                "modelUsed": model_used,
+                "retryCount": retry_count,
+                "memoryReads": memory_reads,
+                "memoryWrites": memory_writes,
+                "toolCalls": tool_calls,
+                "costEstimate": cost_estimate,
+                "errorMessage": error_message,
             },
         )
         r.raise_for_status()

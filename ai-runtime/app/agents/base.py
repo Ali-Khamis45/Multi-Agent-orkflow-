@@ -102,8 +102,9 @@ class AgentBase(ABC):
                 pass
 
     async def handle_task_dispatched(self, envelope: EventEnvelope) -> None:
-        """WorkspaceId/WorkflowRunId/TaskId live on the envelope itself (§6.2);
-        only task-shape fields (TaskType, Name, InputsJson, ...) are in the payload."""
+        """WorkspaceId/WorkflowRunId/TaskId/CorrelationId live on the envelope
+        itself (§6.2, Phase 1.5 §2); only task-shape fields (TaskType, Name,
+        InputsJson, AttemptCount) are in the payload."""
         self.metrics["invocations"] += 1
         payload = json.loads(envelope.payload_json)
         assert envelope.workflow_run_id is not None
@@ -113,9 +114,11 @@ class AgentBase(ABC):
             task_node_id=envelope.task_id,
             workflow_run_id=envelope.workflow_run_id,
             workspace_id=envelope.workspace_id,
+            correlation_id=envelope.correlation_id or uuid.uuid4(),
             task_type=payload["TaskType"],
             name=payload["Name"],
             inputs=json.loads(payload.get("InputsJson") or "{}"),
+            retry_count=payload.get("AttemptCount", 1) - 1,
         )
         try:
             await self.pipeline.run(ctx, self.execute_domain_logic)
@@ -137,19 +140,24 @@ class AgentBase(ABC):
         rendered = await self.tools.invoke(
             "prompt_loader", self.permissions, {"template": prompt_template, "variables": variables}
         )
+        ctx.record_tool_call()
         if not rendered.success:
             raise RuntimeError(f"Prompt render failed for '{prompt_template}': {rendered.error}")
 
         response = await self.model_router.complete(
             self.name, system_prompt=f"You are the {self.name} agent.", user_prompt=rendered.output
         )
+        ctx.record_model_usage(response.model, response.tokens, response.cost_estimate)
         return response.text
 
     async def produce_artifact(
         self, ctx: AgentContext, name: str, artifact_type: str, content: str, extra_outputs: dict[str, Any] | None = None
     ) -> DomainResult:
         """Persists the artifact via the Artifact Store tool (§14.1/§8) and returns
-        the DomainResult the ReasoningPipeline needs to complete the task."""
+        the DomainResult the ReasoningPipeline needs to complete the task. Uses an
+        idempotency key (Phase 1.5 §3) derived from (task, artifact name) so a
+        retried Execute stage — e.g. after a transient failure mid-stage — resolves
+        to the same artifact instead of a spurious extra version."""
         result = await self.tools.invoke(
             "artifact_store",
             self.permissions,
@@ -161,12 +169,18 @@ class AgentBase(ABC):
                 "content": content,
                 "workflowRunId": str(ctx.workflow_run_id),
                 "taskNodeId": str(ctx.task_node_id),
+                "correlationId": str(ctx.correlation_id),
+                "idempotencyKey": f"{ctx.task_node_id}:{name}",
             },
         )
+        ctx.record_tool_call()
         if not result.success:
             raise RuntimeError(f"Artifact store failed for '{name}': {result.error}")
 
-        await self.memory.remember_working(ctx.task_node_id, f"Produced artifact '{name}': {content[:500]}")
+        await self.memory.remember_working(
+            ctx.task_node_id, f"Produced artifact '{name}': {content[:500]}", correlation_id=ctx.correlation_id
+        )
+        ctx.record_memory_write()
 
         return DomainResult(
             output_text=content,

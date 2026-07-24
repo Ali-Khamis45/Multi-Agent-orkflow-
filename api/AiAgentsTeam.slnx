@@ -11,4 +11,7 @@
   <Folder Name="/Infrastructure/">
     <Project Path="Infrastructure/AiAgentsTeam.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/AiAgentsTeam.IntegrationTests/AiAgentsTeam.IntegrationTests.csproj" />
+  </Folder>
 </Solution>

@@ -13,14 +13,16 @@ public sealed class ArtifactsController(ISender sender) : ControllerBase
 {
     public sealed record CreateArtifactRequest(
         Guid WorkspaceId, string Name, ArtifactType Type, string OwnerAgent, string? Content,
-        Guid? WorkflowRunId, Guid? TaskNodeId, Guid? PreviousVersionId);
+        Guid? WorkflowRunId, Guid? TaskNodeId, Guid? PreviousVersionId,
+        Guid? CorrelationId = null, string? IdempotencyKey = null);
 
     [HttpPost]
     public async Task<ActionResult<Guid>> Create(CreateArtifactRequest request, CancellationToken ct)
     {
         var id = await sender.Send(new CreateArtifactCommand(
             request.WorkspaceId, request.Name, request.Type, request.OwnerAgent, request.Content,
-            request.WorkflowRunId, request.TaskNodeId, request.PreviousVersionId), ct);
+            request.WorkflowRunId, request.TaskNodeId, request.PreviousVersionId,
+            request.CorrelationId, request.IdempotencyKey), ct);
         return Ok(id);
     }
 

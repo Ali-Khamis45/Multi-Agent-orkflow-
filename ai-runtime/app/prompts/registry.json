@@ -1,0 +1,114 @@
+{
+  "business_analyst": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "business-analyst",
+    "versions": [
+      {
+        "version": 1,
+        "file": "business_analyst.txt",
+        "description": "Turns the project goal + upstream context into user stories and acceptance criteria.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-24"
+      }
+    ]
+  },
+  "project_manager": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "project-manager",
+    "versions": [
+      {
+        "version": 1,
+        "file": "project_manager.txt",
+        "description": "Breaks user stories into a prioritized task plan.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-24"
+      }
+    ]
+  },
+  "system_architect": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "system-architect",
+    "versions": [
+      {
+        "version": 1,
+        "file": "system_architect.txt",
+        "description": "Produces an architecture document from the task plan.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-24"
+      }
+    ]
+  },
+  "backend_engineer": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "backend-engineer",
+    "versions": [
+      {
+        "version": 1,
+        "file": "backend_engineer.txt",
+        "description": "Implements the backend from the architecture document.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-24"
+      }
+    ]
+  },
+  "frontend_engineer": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "frontend-engineer",
+    "versions": [
+      {
+        "version": 1,
+        "file": "frontend_engineer.txt",
+        "description": "Implements the frontend from the architecture document.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-24"
+      }
+    ]
+  },
+  "code_reviewer": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "code-reviewer",
+    "versions": [
+      {
+        "version": 1,
+        "file": "code_reviewer.txt",
+        "description": "Reviews backend + frontend output and gives an approve/reject verdict.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-24"
+      }
+    ]
+  },
+  "qa_engineer": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "qa-engineer",
+    "versions": [
+      {
+        "version": 1,
+        "file": "qa_engineer.txt",
+        "description": "Produces a test plan and pass/fail assessment from the code review.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-24"
+      }
+    ]
+  },
+  "intent_engine": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "intent-engine",
+    "versions": [
+      {
+        "version": 1,
+        "file": "intent_engine.txt",
+        "description": "Extracts goals, classifies project type, estimates complexity, detects ambiguity.",
+        "variables": ["raw_input"],
+        "created_at": "2026-07-24"
+      }
+    ]
+  }
+}

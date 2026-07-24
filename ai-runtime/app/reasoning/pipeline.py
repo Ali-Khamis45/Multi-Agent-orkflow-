@@ -10,6 +10,11 @@ an injected callable); every other stage has one generic implementation here.
 This is what "specialized agents only implement their own domain logic" means
 in practice — nothing about Observe/Plan/Memory/Tools/Critique/Publish is
 duplicated per agent.
+
+Phase 1.5 hardening folded in here: every stage now records the full unified
+telemetry record (§1 — started_at/tokens/model/retry/memory/tool/cost/error),
+carries the workflow's CorrelationId (§2) onto every trace and event, and
+publishes a Structured Failure (§4) instead of a bare exception string.
 """
 
 from __future__ import annotations
@@ -19,6 +24,7 @@ import time
 import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 from app.clients.api_client import ApiClient
@@ -26,6 +32,7 @@ from app.clients.event_bus import RedisEventBus
 from app.logging_config import get_logger, log_fields
 from app.memory.memory_client import MemoryClient
 from app.models.event_envelope import EventEnvelope, EventTypes
+from app.reasoning.failures import classify_exception
 from app.routing.model_router import ModelRouter
 from app.tools.registry import ToolRegistry
 
@@ -39,9 +46,11 @@ class AgentContext:
     task_node_id: uuid.UUID
     workflow_run_id: uuid.UUID
     workspace_id: uuid.UUID
+    correlation_id: uuid.UUID
     task_type: str
     name: str
     inputs: dict[str, Any]
+    retry_count: int = 0
 
     observations: Any = None
     understanding: Any = None
@@ -55,6 +64,38 @@ class AgentContext:
     critique: str = ""
     confidence: float = 0.0
     risk_level: str = "medium"
+
+    # Transient per-stage telemetry — reset by the pipeline before each stage,
+    # accumulated by tool/memory/model calls made *during* that stage, and
+    # read back by the pipeline immediately after (see ReasoningPipeline._stage).
+    stage_tool_calls: int = 0
+    stage_memory_reads: int = 0
+    stage_memory_writes: int = 0
+    stage_model_used: str | None = None
+    stage_tokens: int | None = None
+    stage_cost_estimate: float | None = None
+
+    def reset_stage_telemetry(self) -> None:
+        self.stage_tool_calls = 0
+        self.stage_memory_reads = 0
+        self.stage_memory_writes = 0
+        self.stage_model_used = None
+        self.stage_tokens = None
+        self.stage_cost_estimate = None
+
+    def record_tool_call(self) -> None:
+        self.stage_tool_calls += 1
+
+    def record_memory_read(self, count: int = 1) -> None:
+        self.stage_memory_reads += count
+
+    def record_memory_write(self, count: int = 1) -> None:
+        self.stage_memory_writes += count
+
+    def record_model_usage(self, model: str, tokens: int, cost_estimate: float) -> None:
+        self.stage_model_used = model
+        self.stage_tokens = (self.stage_tokens or 0) + tokens
+        self.stage_cost_estimate = (self.stage_cost_estimate or 0.0) + cost_estimate
 
 
 @dataclass
@@ -109,15 +150,17 @@ class ReasoningPipeline:
             await self._stage(ctx, "SelfCritique", self._self_critique)
             await self._stage(ctx, "ConfidenceEvaluation", self._evaluate_confidence)
             await self._stage(
-                ctx, "PublishResult", lambda c: self._publish_result(c, domain_result, failed=False, reason=None)
+                ctx, "PublishResult", lambda c: self._publish_result(c, domain_result, failure=None)
             )
 
         except Exception as exc:  # noqa: BLE001 — deliberately broad: this is the task's failure boundary
+            failure = classify_exception(exc)
             logger.exception(
-                "task execution failed", extra={"fields": {"agent": self._agent_name, "task_node_id": str(ctx.task_node_id)}}
+                "task execution failed",
+                extra={"fields": {"agent": self._agent_name, "task_node_id": str(ctx.task_node_id), "category": failure.category}},
             )
             await self._stage(
-                ctx, "PublishResult", lambda c: self._publish_result(c, None, failed=True, reason=str(exc))
+                ctx, "PublishResult", lambda c: self._publish_result(c, None, failure=failure)
             )
 
     # ---- generic stages ----
@@ -160,6 +203,7 @@ class ReasoningPipeline:
     async def _retrieve_memory(self, ctx: AgentContext) -> list[dict[str, Any]]:
         working = await self._memory.recall_working(ctx.task_node_id)
         project = await self._memory.recall_project()
+        ctx.record_memory_read(2)  # one lookup per layer (§6 Agent Metrics memory_usage)
         ctx.memory_items = working + project
         return ctx.memory_items
 
@@ -183,6 +227,7 @@ class ReasoningPipeline:
             "uncertainty in the following output. If it looks solid, say so plainly.",
             user_prompt=ctx.execution_output[:4000],
         )
+        ctx.record_model_usage(response.model, response.tokens, response.cost_estimate)
         ctx.critique = response.text
         return ctx.critique
 
@@ -200,17 +245,19 @@ class ReasoningPipeline:
         ctx.risk_level = risk_level
         return confidence, risk_level
 
-    async def _publish_result(
-        self, ctx: AgentContext, domain_result: DomainResult | None, *, failed: bool, reason: str | None
-    ) -> None:
-        if failed:
+    async def _publish_result(self, ctx: AgentContext, domain_result: DomainResult | None, *, failure) -> None:
+        if failure is not None:
             envelope = EventEnvelope(
                 type=EventTypes.TASK_FAILED,
                 workspace_id=ctx.workspace_id,
                 workflow_run_id=ctx.workflow_run_id,
                 task_id=ctx.task_node_id,
+                correlation_id=ctx.correlation_id,
                 produced_by=self._agent_name,
-                payload_json=json.dumps({"TaskNodeId": str(ctx.task_node_id), "ReasonJson": json.dumps({"error": reason})}),
+                payload_json=json.dumps({
+                    "TaskNodeId": str(ctx.task_node_id),
+                    "ReasonJson": json.dumps(failure.to_reason_json_dict()),
+                }),
             )
             await self._event_bus.publish(envelope)
             return
@@ -234,6 +281,7 @@ class ReasoningPipeline:
             workspace_id=ctx.workspace_id,
             workflow_run_id=ctx.workflow_run_id,
             task_id=ctx.task_node_id,
+            correlation_id=ctx.correlation_id,
             produced_by=self._agent_name,
             payload_json=json.dumps(payload),
             confidence=ctx.confidence,
@@ -244,6 +292,8 @@ class ReasoningPipeline:
     # ---- stage timing/tracing/logging wrapper ----
 
     async def _stage(self, ctx: AgentContext, stage_name: str, fn: Callable[[AgentContext], Awaitable[Any]]) -> Any:
+        ctx.reset_stage_telemetry()
+        started_wall = datetime.now(timezone.utc)
         started = time.perf_counter()
         error: str | None = None
         result: Any = None
@@ -256,6 +306,10 @@ class ReasoningPipeline:
         finally:
             duration_ms = int((time.perf_counter() - started) * 1000)
             output_text = str(result) if result is not None else None
+            # Fallback char/4 estimate only for stages that made no real model call.
+            tokens = ctx.stage_tokens if ctx.stage_tokens is not None else (
+                len(output_text) // 4 if output_text else None
+            )
 
             log_fields(
                 logger,
@@ -265,9 +319,13 @@ class ReasoningPipeline:
                 stage=stage_name,
                 duration_ms=duration_ms,
                 confidence=ctx.confidence if stage_name == "ConfidenceEvaluation" else None,
-                tool_usage=ctx.selected_tools if stage_name == "SelectTools" else None,
-                memory_usage=len(ctx.memory_items) if stage_name == "RetrieveMemory" else None,
-                tokens=len(output_text) if output_text else None,  # char-count placeholder — see model_router
+                model_used=ctx.stage_model_used,
+                tool_calls=ctx.stage_tool_calls,
+                memory_reads=ctx.stage_memory_reads,
+                memory_writes=ctx.stage_memory_writes,
+                tokens=tokens,
+                cost_estimate=ctx.stage_cost_estimate,
+                retry_count=ctx.retry_count,
                 error=error,
             )
 
@@ -276,9 +334,19 @@ class ReasoningPipeline:
                     task_node_id=ctx.task_node_id,
                     agent=self._agent_name,
                     stage=stage_name,
+                    started_at=started_wall.isoformat(),
+                    duration_ms=duration_ms,
                     input_json=None,
                     output_json=(output_text or "")[:4000],
-                    duration_ms=duration_ms,
+                    tokens=tokens,
+                    confidence=ctx.confidence if stage_name == "ConfidenceEvaluation" else None,
+                    model_used=ctx.stage_model_used,
+                    retry_count=ctx.retry_count,
+                    memory_reads=ctx.stage_memory_reads,
+                    memory_writes=ctx.stage_memory_writes,
+                    tool_calls=ctx.stage_tool_calls,
+                    cost_estimate=ctx.stage_cost_estimate,
+                    error_message=error,
                 )
             except Exception:
                 logger.warning("failed to persist reasoning trace", extra={"fields": {"stage": stage_name}})

@@ -13,6 +13,11 @@ public sealed record EventEnvelope
     public required Guid WorkspaceId { get; init; }
     public Guid? WorkflowRunId { get; init; }
     public Guid? TaskId { get; init; }
+
+    /// <summary>Threads one workflow execution across ASP.NET, Redis, the Python
+    /// Runtime, SignalR, and any future worker (Phase 1.5 §2 Correlation IDs).</summary>
+    public Guid? CorrelationId { get; init; }
+
     public required string ProducedBy { get; init; }
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
     public required string PayloadJson { get; init; }

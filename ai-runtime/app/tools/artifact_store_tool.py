@@ -4,6 +4,8 @@ tool-calling rather than each agent embedding its own HTTP call.
 """
 
 from __future__ import annotations
+
+import uuid
 from typing import Any
 
 from app.clients.api_client import ApiClient
@@ -29,14 +31,14 @@ class ArtifactStoreTool(Tool):
                     "content": {"type": "string"},
                     "workflowRunId": {"type": "string"},
                     "taskNodeId": {"type": "string"},
+                    "correlationId": {"type": "string"},
+                    "idempotencyKey": {"type": "string"},
                 },
             },
             required_permission="artifact_store",
         )
 
     async def execute(self, params: dict[str, Any]) -> ToolResult:
-        import uuid
-
         artifact_id = await self._api.create_artifact(
             workspace_id=uuid.UUID(params["workspaceId"]),
             name=params["name"],
@@ -45,5 +47,7 @@ class ArtifactStoreTool(Tool):
             content=params["content"],
             workflow_run_id=uuid.UUID(params["workflowRunId"]) if params.get("workflowRunId") else None,
             task_node_id=uuid.UUID(params["taskNodeId"]) if params.get("taskNodeId") else None,
+            correlation_id=uuid.UUID(params["correlationId"]) if params.get("correlationId") else None,
+            idempotency_key=params.get("idempotencyKey"),
         )
         return ToolResult(success=True, output={"artifactId": str(artifact_id)})

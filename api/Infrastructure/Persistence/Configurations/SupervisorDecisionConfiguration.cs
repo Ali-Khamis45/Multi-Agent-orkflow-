@@ -14,5 +14,6 @@ public class SupervisorDecisionConfiguration : IEntityTypeConfiguration<Supervis
         builder.Property(x => x.Rationale).IsRequired();
         builder.Property(x => x.InputSnapshotJson).IsRequired();
         builder.HasIndex(x => x.WorkflowRunId);
+        builder.HasIndex(x => x.CorrelationId);
     }
 }

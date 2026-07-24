@@ -37,28 +37,36 @@ class MemoryClient:
         self._api = api
         self._workspace_id = workspace_id
 
-    async def remember(self, layer: str, scope_ref: uuid.UUID, kind: str, content: str) -> uuid.UUID:
-        return await self._api.write_memory(self._workspace_id, layer, scope_ref, kind, content)
+    async def remember(
+        self, layer: str, scope_ref: uuid.UUID, kind: str, content: str, correlation_id: uuid.UUID | None = None
+    ) -> uuid.UUID:
+        return await self._api.write_memory(self._workspace_id, layer, scope_ref, kind, content, correlation_id=correlation_id)
 
     async def recall(self, layer: str, scope_ref: uuid.UUID, limit: int = 20) -> list[dict[str, Any]]:
         return await self._api.query_memory(self._workspace_id, layer, scope_ref, limit)
 
     # Convenience wrappers matching AgentBase's usage (task-scoped working memory,
     # workflow-scoped conversation, workspace-scoped project memory).
-    async def remember_working(self, task_id: uuid.UUID, content: str, kind: str = MemoryKind.DECISION) -> None:
-        await self.remember(MemoryLayer.WORKING, task_id, kind, content)
+    async def remember_working(
+        self, task_id: uuid.UUID, content: str, kind: str = MemoryKind.DECISION, correlation_id: uuid.UUID | None = None
+    ) -> None:
+        await self.remember(MemoryLayer.WORKING, task_id, kind, content, correlation_id=correlation_id)
 
     async def recall_working(self, task_id: uuid.UUID) -> list[dict[str, Any]]:
         return await self.recall(MemoryLayer.WORKING, task_id)
 
-    async def remember_conversation(self, workflow_run_id: uuid.UUID, content: str) -> None:
-        await self.remember(MemoryLayer.CONVERSATION, workflow_run_id, MemoryKind.DECISION, content)
+    async def remember_conversation(
+        self, workflow_run_id: uuid.UUID, content: str, correlation_id: uuid.UUID | None = None
+    ) -> None:
+        await self.remember(MemoryLayer.CONVERSATION, workflow_run_id, MemoryKind.DECISION, content, correlation_id=correlation_id)
 
     async def recall_conversation(self, workflow_run_id: uuid.UUID) -> list[dict[str, Any]]:
         return await self.recall(MemoryLayer.CONVERSATION, workflow_run_id)
 
-    async def remember_project(self, content: str, kind: str = MemoryKind.DECISION) -> None:
-        await self.remember(MemoryLayer.PROJECT, self._workspace_id, kind, content)
+    async def remember_project(
+        self, content: str, kind: str = MemoryKind.DECISION, correlation_id: uuid.UUID | None = None
+    ) -> None:
+        await self.remember(MemoryLayer.PROJECT, self._workspace_id, kind, content, correlation_id=correlation_id)
 
     async def recall_project(self) -> list[dict[str, Any]]:
         return await self.recall(MemoryLayer.PROJECT, self._workspace_id)

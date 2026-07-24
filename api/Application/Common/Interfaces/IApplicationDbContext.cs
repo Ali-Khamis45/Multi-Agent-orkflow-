@@ -1,6 +1,7 @@
 using AiAgentsTeam.Domain.Agents;
 using AiAgentsTeam.Domain.Artifacts;
 using AiAgentsTeam.Domain.Checkpoints;
+using AiAgentsTeam.Domain.Failures;
 using AiAgentsTeam.Domain.Intent;
 using AiAgentsTeam.Domain.Memory;
 using AiAgentsTeam.Domain.Reasoning;
@@ -31,6 +32,7 @@ public interface IApplicationDbContext
     DbSet<ReasoningTrace> ReasoningTraces { get; }
     DbSet<IntentSession> IntentSessions { get; }
     DbSet<ClarificationAnswer> ClarificationAnswers { get; }
+    DbSet<ExecutionFailure> ExecutionFailures { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -6,7 +6,7 @@ namespace AiAgentsTeam.Application.Artifacts.Queries;
 
 public sealed record ArtifactDto(
     Guid Id, string Name, string Type, string OwnerAgent, int Version, string Status,
-    string? Content, Guid? PreviousVersionId, DateTimeOffset CreatedAt);
+    string? Content, Guid? PreviousVersionId, DateTimeOffset CreatedAt, Guid? CorrelationId);
 
 public sealed record GetArtifactQuery(Guid ArtifactId) : IRequest<ArtifactDto?>;
 
@@ -20,7 +20,7 @@ public sealed class GetArtifactQueryHandler(IApplicationDbContext db) : IRequest
 
     internal static ArtifactDto ToDto(Domain.Artifacts.Artifact a) => new(
         a.Id, a.Name, a.Type.ToString(), a.OwnerAgent, a.Version, a.Status.ToString(),
-        a.Content, a.PreviousVersionId, a.CreatedAt);
+        a.Content, a.PreviousVersionId, a.CreatedAt, a.CorrelationId);
 }
 
 /// <summary>All versions of a logical artifact, newest first — walks the PreviousVersionId chain.</summary>
