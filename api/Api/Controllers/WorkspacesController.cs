@@ -1,4 +1,5 @@
 using AiAgentsTeam.Application.Workspaces.Commands;
+using AiAgentsTeam.Application.Workspaces.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,4 +17,8 @@ public sealed class WorkspacesController(ISender sender) : ControllerBase
         var id = await sender.Send(new CreateWorkspaceCommand(request.Name), ct);
         return CreatedAtAction(nameof(Create), new { id }, id);
     }
+
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyCollection<WorkspaceDto>>> GetAll(CancellationToken ct) =>
+        Ok(await sender.Send(new GetWorkspacesQuery(), ct));
 }

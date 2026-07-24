@@ -40,6 +40,7 @@ services:
       ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=aiagentsteam;Username=aiagentsteam;Password=aiagentsteam"
       ConnectionStrings__Redis: "redis:6379"
       Cors__AllowedOrigins__0: "http://localhost:3000"
+      AiRuntime__BaseUrl: "http://ai-runtime:8000"
     ports:
       - "5080:8080"
 

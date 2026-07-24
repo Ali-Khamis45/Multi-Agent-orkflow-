@@ -1,5 +1,6 @@
 using AiAgentsTeam.Application.Common.Interfaces;
 using AiAgentsTeam.Application.Common.Messaging;
+using AiAgentsTeam.Infrastructure.AiRuntime;
 using AiAgentsTeam.Infrastructure.EventBus;
 using AiAgentsTeam.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,15 @@ public static class DependencyInjection
         services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnectionString));
         services.AddSingleton<IEventBus, RedisStreamsEventBus>();
         services.AddHostedService<OrchestratorEventConsumer>();
+
+        var aiRuntimeBaseUrl = configuration["AiRuntime:BaseUrl"]
+            ?? throw new InvalidOperationException("Missing AiRuntime:BaseUrl.");
+
+        services.AddHttpClient<IAiRuntimeClient, AiRuntimeClient>(client =>
+        {
+            client.BaseAddress = new Uri(aiRuntimeBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
 
         return services;
     }

@@ -59,4 +59,9 @@ public sealed class WorkflowsController(ISender sender) : ControllerBase
         var dto = await sender.Send(new GetWorkflowRunQuery(runId), ct);
         return dto is null ? NotFound() : Ok(dto);
     }
+
+    [HttpGet("runs")]
+    public async Task<ActionResult<IReadOnlyCollection<WorkflowRunDto>>> GetAll(
+        [FromQuery] Guid? workspaceId, [FromQuery] string? status, [FromQuery] int limit, CancellationToken ct) =>
+        Ok(await sender.Send(new GetWorkflowRunsQuery(workspaceId, status, limit == 0 ? 50 : limit), ct));
 }

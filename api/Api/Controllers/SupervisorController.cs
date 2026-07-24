@@ -1,4 +1,5 @@
 using AiAgentsTeam.Application.Supervisor.Commands;
+using AiAgentsTeam.Application.Supervisor.Queries;
 using AiAgentsTeam.Domain.Supervisor;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -22,4 +23,9 @@ public sealed class SupervisorController(ISender sender) : ControllerBase
             request.Rationale, request.Confidence, request.TargetNodeIdsJson), ct);
         return Ok(id);
     }
+
+    [HttpGet("decisions")]
+    public async Task<ActionResult<IReadOnlyCollection<SupervisorDecisionDto>>> GetDecisions(
+        [FromQuery] Guid workflowRunId, CancellationToken ct) =>
+        Ok(await sender.Send(new GetSupervisorDecisionsQuery(workflowRunId), ct));
 }

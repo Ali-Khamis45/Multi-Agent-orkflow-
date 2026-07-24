@@ -64,9 +64,10 @@ class Runtime:
         self.event_bus = RedisEventBus(settings.redis_url)
         self.model_router = ModelRouter(settings)
 
+        self.prompt_registry = PromptRegistry(Path(__file__).parent / "prompts")
         self.tools = ToolRegistry()
         self.tools.register(FilesystemTool(root=Path(settings.workspace_files_root), max_bytes=settings.filesystem_max_bytes))
-        self.tools.register(PromptLoaderTool(registry=PromptRegistry(Path(__file__).parent / "prompts")))
+        self.tools.register(PromptLoaderTool(registry=self.prompt_registry))
         self.tools.register(ArtifactStoreTool(self.api))
 
         self.default_workspace_id: uuid.UUID | None = None
@@ -175,6 +176,33 @@ async def intake(request: IntakeRequest) -> IntakeResponse:
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/prompts")
+async def list_prompts() -> list[dict]:
+    """Prompt Registry (§8), read by the .NET API's proxy endpoint
+    (GET /api/prompts) — the dashboard never calls this runtime directly
+    (Phase 1.6 design goal); only the ASP.NET API does, server-to-server."""
+    runtime: Runtime = app.state.runtime
+    return [
+        {
+            "name": entry.name,
+            "owner": entry.owner,
+            "compatibleAgent": entry.compatible_agent,
+            "currentVersion": entry.current_version,
+            "versions": [
+                {
+                    "version": v.version,
+                    "file": v.file,
+                    "description": v.description,
+                    "variables": v.variables,
+                    "createdAt": v.created_at,
+                }
+                for v in entry.versions
+            ],
+        }
+        for entry in runtime.prompt_registry.list_entries()
+    ]
 
 
 @app.get("/agents")

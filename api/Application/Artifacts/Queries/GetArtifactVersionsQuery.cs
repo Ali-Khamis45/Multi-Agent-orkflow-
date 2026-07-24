@@ -6,7 +6,8 @@ namespace AiAgentsTeam.Application.Artifacts.Queries;
 
 public sealed record ArtifactDto(
     Guid Id, string Name, string Type, string OwnerAgent, int Version, string Status,
-    string? Content, Guid? PreviousVersionId, DateTimeOffset CreatedAt, Guid? CorrelationId);
+    string? Content, Guid? PreviousVersionId, DateTimeOffset CreatedAt, Guid? CorrelationId,
+    Guid? WorkflowRunId, Guid? TaskNodeId);
 
 public sealed record GetArtifactQuery(Guid ArtifactId) : IRequest<ArtifactDto?>;
 
@@ -20,7 +21,7 @@ public sealed class GetArtifactQueryHandler(IApplicationDbContext db) : IRequest
 
     internal static ArtifactDto ToDto(Domain.Artifacts.Artifact a) => new(
         a.Id, a.Name, a.Type.ToString(), a.OwnerAgent, a.Version, a.Status.ToString(),
-        a.Content, a.PreviousVersionId, a.CreatedAt, a.CorrelationId);
+        a.Content, a.PreviousVersionId, a.CreatedAt, a.CorrelationId, a.WorkflowRunId, a.TaskNodeId);
 }
 
 /// <summary>All versions of a logical artifact, newest first — walks the PreviousVersionId chain.</summary>
@@ -78,5 +79,41 @@ public sealed class GetLatestArtifactByNameQueryHandler(IApplicationDbContext db
             .FirstOrDefaultAsync(cancellationToken);
 
         return latest is null ? null : GetArtifactQueryHandler.ToDto(latest);
+    }
+}
+
+/// <summary>Artifact Explorer (Phase 1.6) — the latest version of every logical
+/// artifact in a workspace, optionally scoped to one run/type/search term.</summary>
+public sealed record GetArtifactsQuery(
+    Guid WorkspaceId, Guid? WorkflowRunId = null, string? Type = null, string? Search = null, int Limit = 100)
+    : IRequest<IReadOnlyCollection<ArtifactDto>>;
+
+public sealed class GetArtifactsQueryHandler(IApplicationDbContext db)
+    : IRequestHandler<GetArtifactsQuery, IReadOnlyCollection<ArtifactDto>>
+{
+    public async Task<IReadOnlyCollection<ArtifactDto>> Handle(GetArtifactsQuery request, CancellationToken cancellationToken)
+    {
+        var query = db.Artifacts.Where(a => a.WorkspaceId == request.WorkspaceId);
+
+        if (request.WorkflowRunId is { } runId)
+            query = query.Where(a => a.WorkflowRunId == runId);
+
+        if (request.Type is { } type && Enum.TryParse<Domain.Artifacts.ArtifactType>(type, true, out var parsedType))
+            query = query.Where(a => a.Type == parsedType);
+
+        if (request.Search is { Length: > 0 } search)
+            query = query.Where(a => a.Name.Contains(search));
+
+        var all = await query.OrderByDescending(a => a.CreatedAt).ToListAsync(cancellationToken);
+
+        // Latest version per logical artifact (grouped by run + name, since the
+        // same artifact name can legitimately recur across different runs).
+        var latestPerLogicalArtifact = all
+            .GroupBy(a => (a.WorkflowRunId, a.Name))
+            .Select(g => g.OrderByDescending(a => a.Version).First())
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(request.Limit);
+
+        return latestPerLogicalArtifact.Select(GetArtifactQueryHandler.ToDto).ToList();
     }
 }

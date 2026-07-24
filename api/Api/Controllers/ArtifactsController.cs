@@ -44,4 +44,10 @@ public sealed class ArtifactsController(ISender sender) : ControllerBase
         var dto = await sender.Send(new GetLatestArtifactByNameQuery(workflowRunId, name), ct);
         return dto is null ? NotFound() : Ok(dto);
     }
+
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyCollection<ArtifactDto>>> GetAll(
+        [FromQuery] Guid workspaceId, [FromQuery] Guid? workflowRunId, [FromQuery] string? type,
+        [FromQuery] string? search, [FromQuery] int limit, CancellationToken ct) =>
+        Ok(await sender.Send(new GetArtifactsQuery(workspaceId, workflowRunId, type, search, limit == 0 ? 100 : limit), ct));
 }
