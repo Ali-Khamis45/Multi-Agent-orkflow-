@@ -1,0 +1,28 @@
+using AiAgentsTeam.Application.Reasoning.Commands;
+using AiAgentsTeam.Application.Reasoning.Queries;
+using AiAgentsTeam.Domain.Reasoning;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+
+namespace AiAgentsTeam.Api.Controllers;
+
+/// <summary>Reasoning Engine trace endpoints (ARCHITECTURE_EXTENSION.md §E6) — every agent's 12-stage pipeline.</summary>
+[ApiController]
+[Route("api/reasoning")]
+public sealed class ReasoningController(ISender sender) : ControllerBase
+{
+    public sealed record RecordTraceRequest(
+        Guid TaskNodeId, string Agent, ReasoningStage Stage, string? InputJson, string? OutputJson, long DurationMs);
+
+    [HttpPost("traces")]
+    public async Task<ActionResult<Guid>> RecordTrace(RecordTraceRequest request, CancellationToken ct)
+    {
+        var id = await sender.Send(new RecordReasoningTraceCommand(
+            request.TaskNodeId, request.Agent, request.Stage, request.InputJson, request.OutputJson, request.DurationMs), ct);
+        return Ok(id);
+    }
+
+    [HttpGet("traces/{taskNodeId:guid}")]
+    public async Task<ActionResult<IReadOnlyCollection<ReasoningTraceDto>>> GetTraces(Guid taskNodeId, CancellationToken ct) =>
+        Ok(await sender.Send(new GetReasoningTracesQuery(taskNodeId), ct));
+}

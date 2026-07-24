@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Api/">
+    <Project Path="Api/AiAgentsTeam.Api.csproj" />
+  </Folder>
+  <Folder Name="/Application/">
+    <Project Path="Application/AiAgentsTeam.Application.csproj" />
+  </Folder>
+  <Folder Name="/Domain/">
+    <Project Path="Domain/AiAgentsTeam.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Infrastructure/AiAgentsTeam.Infrastructure.csproj" />
+  </Folder>
+</Solution>

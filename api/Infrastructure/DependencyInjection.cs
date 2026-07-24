@@ -1,0 +1,32 @@
+using AiAgentsTeam.Application.Common.Interfaces;
+using AiAgentsTeam.Application.Common.Messaging;
+using AiAgentsTeam.Infrastructure.EventBus;
+using AiAgentsTeam.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using StackExchange.Redis;
+
+namespace AiAgentsTeam.Infrastructure;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("Postgres")
+            ?? throw new InvalidOperationException("Missing ConnectionStrings:Postgres.");
+
+        services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+            ?? throw new InvalidOperationException("Missing ConnectionStrings:Redis.");
+
+        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnectionString));
+        services.AddSingleton<IEventBus, RedisStreamsEventBus>();
+        services.AddHostedService<OrchestratorEventConsumer>();
+
+        return services;
+    }
+}
