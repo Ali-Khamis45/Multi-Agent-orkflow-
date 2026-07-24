@@ -34,4 +34,12 @@ public sealed class ArtifactsController(ISender sender) : ControllerBase
     [HttpGet("{id:guid}/versions")]
     public async Task<ActionResult<IReadOnlyCollection<ArtifactDto>>> GetVersions(Guid id, CancellationToken ct) =>
         Ok(await sender.Send(new GetArtifactVersionsQuery(id), ct));
+
+    [HttpGet("by-name")]
+    public async Task<ActionResult<ArtifactDto>> GetByName(
+        [FromQuery] Guid workflowRunId, [FromQuery] string name, CancellationToken ct)
+    {
+        var dto = await sender.Send(new GetLatestArtifactByNameQuery(workflowRunId, name), ct);
+        return dto is null ? NotFound() : Ok(dto);
+    }
 }

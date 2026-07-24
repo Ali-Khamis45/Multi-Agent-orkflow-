@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using AiAgentsTeam.Api.EventRelay;
 using AiAgentsTeam.Api.Hubs;
 using AiAgentsTeam.Application;
@@ -7,7 +8,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// Every enum in a request/response body (ArtifactType, MemoryLayer, MemoryKind,
+// SupervisorDecisionType, ReasoningStage, ...) is exchanged as its string name —
+// matching the AI Runtime's Pydantic models and this API's own EF Core string
+// conversions (§ ArtifactConfiguration etc.) — never as a raw integer.
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
 

@@ -55,3 +55,28 @@ public sealed class GetArtifactVersionsQueryHandler(IApplicationDbContext db)
         return chain.Select(GetArtifactQueryHandler.ToDto).ToList();
     }
 }
+
+/// <summary>
+/// Resolves the latest version of a named artifact within a WorkflowRun. Exists
+/// because a DAG node's InputsJson is fixed at node-creation time (before its
+/// predecessors have run), so a join node (e.g. Code Reviewer, depending on both
+/// parallel Backend and Frontend outputs) cannot reference an exact ArtifactId in
+/// advance — it references the artifact by name instead, and the AI Runtime's
+/// RetrieveContext stage (§E6) resolves it via this query once the predecessor
+/// has actually produced it.
+/// </summary>
+public sealed record GetLatestArtifactByNameQuery(Guid WorkflowRunId, string Name) : IRequest<ArtifactDto?>;
+
+public sealed class GetLatestArtifactByNameQueryHandler(IApplicationDbContext db)
+    : IRequestHandler<GetLatestArtifactByNameQuery, ArtifactDto?>
+{
+    public async Task<ArtifactDto?> Handle(GetLatestArtifactByNameQuery request, CancellationToken cancellationToken)
+    {
+        var latest = await db.Artifacts
+            .Where(a => a.WorkflowRunId == request.WorkflowRunId && a.Name == request.Name)
+            .OrderByDescending(a => a.Version)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return latest is null ? null : GetArtifactQueryHandler.ToDto(latest);
+    }
+}

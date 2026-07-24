@@ -46,6 +46,13 @@ public sealed class WorkflowsController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("runs/{runId:guid}/reschedule")]
+    public async Task<IActionResult> Reschedule(Guid runId, CancellationToken ct)
+    {
+        await sender.Send(new RescheduleWorkflowRunCommand(runId), ct);
+        return NoContent();
+    }
+
     [HttpGet("runs/{runId:guid}")]
     public async Task<ActionResult<WorkflowRunDto>> Get(Guid runId, CancellationToken ct)
     {

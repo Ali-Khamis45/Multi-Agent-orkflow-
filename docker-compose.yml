@@ -43,9 +43,28 @@ services:
     ports:
       - "5080:8080"
 
-  # ai-runtime and frontend services are added once their Dockerfiles land
-  # (Phase 1 milestones 2 and 5) — kept out until then so `docker compose up`
-  # always succeeds at every intermediate commit.
+  ai-runtime:
+    build:
+      context: ./ai-runtime
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+      - redis
+    environment:
+      API_BASE_URL: "http://api:8080"
+      REDIS_URL: "redis://redis:6379"
+      # ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY / OLLAMA_HOST:
+      # leave unset to run fully on the Multi-Model Router's mock fallback
+      # (ARCHITECTURE_EXTENSION.md §E7) — set any of them to use a real model.
+    ports:
+      - "8000:8000"
+    volumes:
+      - workspace-files:/data/workspace-files
+
+  # frontend is added once its Dockerfile lands (Phase 1 milestone 5) — kept
+  # out until then so `docker compose up` always succeeds at every
+  # intermediate commit.
 
 volumes:
   postgres-data:
+  workspace-files:
