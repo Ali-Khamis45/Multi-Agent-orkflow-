@@ -6,11 +6,11 @@ namespace AiAgentsTeam.Infrastructure.AiRuntime;
 
 public sealed class AiRuntimeClient(HttpClient http) : IAiRuntimeClient
 {
-    public async Task<Guid> SubmitIntakeAsync(string rawInput, Guid? workspaceId, CancellationToken cancellationToken)
+    public async Task<Guid> SubmitIntakeAsync(string rawInput, Guid? workspaceId, string companyType, CancellationToken cancellationToken)
     {
         var response = await http.PostAsJsonAsync(
             "/intake",
-            new { raw_input = rawInput, workspace_id = workspaceId },
+            new { raw_input = rawInput, workspace_id = workspaceId, company_type = companyType },
             cancellationToken);
         response.EnsureSuccessStatusCode();
 

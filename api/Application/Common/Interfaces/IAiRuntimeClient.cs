@@ -10,7 +10,11 @@ namespace AiAgentsTeam.Application.Common.Interfaces;
 /// </summary>
 public interface IAiRuntimeClient
 {
-    Task<Guid> SubmitIntakeAsync(string rawInput, Guid? workspaceId, CancellationToken cancellationToken);
+    /// <summary>companyType picks which fixed pipeline the Supervisor Brain
+    /// builds (Phase 2) — always the authenticated caller's own CompanyType,
+    /// never client-supplied, so a request can't be routed into a company the
+    /// caller doesn't belong to. See IntakeController.</summary>
+    Task<Guid> SubmitIntakeAsync(string rawInput, Guid? workspaceId, string companyType, CancellationToken cancellationToken);
 
     Task<string> GetPromptsJsonAsync(CancellationToken cancellationToken);
 }

@@ -177,6 +177,11 @@ app = FastAPI(title="AI Agents Team — AI Runtime", lifespan=lifespan)
 class IntakeRequest(BaseModel):
     raw_input: str
     workspace_id: uuid.UUID | None = None
+    # Phase 2: which fixed pipeline the Supervisor Brain builds. Always supplied
+    # by the .NET API's proxy (derived from the submitting user's CompanyType,
+    # fixed at registration — see docs/architecture/OVERVIEW.md); defaults to
+    # SoftwareCompany only so a bare curl/test call without it still works.
+    company_type: str = "SoftwareCompany"
 
 
 class IntakeResponse(BaseModel):
@@ -185,15 +190,15 @@ class IntakeResponse(BaseModel):
 
 @app.post("/intake", response_model=IntakeResponse)
 async def intake(request: IntakeRequest) -> IntakeResponse:
-    """User Request -> Intent Engine -> Business Analyst -> Supervisor Brain ->
-    Project Manager -> System Architect -> Backend + Frontend (parallel) ->
-    Code Reviewer -> QA Engineer -> Final structured artifacts."""
+    """User Request -> Intent Engine -> first task -> Supervisor Brain expands
+    the rest of the CompanyType-appropriate fixed pipeline (see
+    app/supervisor/supervisor_agent.py)."""
     runtime: Runtime = app.state.runtime
     workspace_id = request.workspace_id or runtime.default_workspace_id
     assert workspace_id is not None
     assert runtime.supervisor is not None
 
-    run_id = await runtime.supervisor.kickoff(workspace_id, request.raw_input)
+    run_id = await runtime.supervisor.kickoff(workspace_id, request.raw_input, request.company_type)
     return IntakeResponse(workflow_run_id=run_id)
 
 
