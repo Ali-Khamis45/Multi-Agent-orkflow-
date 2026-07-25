@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, Download, FileText, FileJson, FileCode, FileTerminal, Database, Image as ImageIcon, Workflow } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -50,15 +50,17 @@ export function ArtifactsExplorer() {
     type: type === "All" ? undefined : type,
     search: search || undefined,
   });
-  const { data: versions } = useArtifactVersions(selectedId ?? undefined);
+  // No selection yet (or the selected artifact isn't in the current filtered
+  // list) falls back to the first result — derived at render time rather than
+  // via an effect, so there's no extra render pass syncing state to state.
+  const effectiveSelectedId =
+    selectedId && artifacts?.some((a) => a.id === selectedId) ? selectedId : (artifacts?.[0]?.id ?? null);
 
-  useEffect(() => {
-    if (!selectedId && artifacts && artifacts.length > 0) setSelectedId(artifacts[0].id);
-  }, [artifacts, selectedId]);
+  const { data: versions } = useArtifactVersions(effectiveSelectedId ?? undefined);
 
   const selected = useMemo(
-    () => versions?.find((v) => v.id === selectedId) ?? artifacts?.find((a) => a.id === selectedId),
-    [versions, artifacts, selectedId],
+    () => versions?.find((v) => v.id === effectiveSelectedId) ?? artifacts?.find((a) => a.id === effectiveSelectedId),
+    [versions, artifacts, effectiveSelectedId],
   );
 
   return (
@@ -106,7 +108,7 @@ export function ArtifactsExplorer() {
                 onClick={() => setSelectedId(a.id)}
                 className={cn(
                   "flex w-full items-center gap-2 border-b border-border/40 px-2.5 py-2 text-left text-xs transition-colors last:border-0 hover:bg-secondary/40",
-                  a.id === selectedId && "bg-secondary/60",
+                  a.id === effectiveSelectedId && "bg-secondary/60",
                 )}
               >
                 <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
