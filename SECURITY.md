@@ -15,7 +15,7 @@ If you find a security issue that **isn't** already documented in
 [docs/reviews/SECURITY_REVIEW.md](docs/reviews/SECURITY_REVIEW.md):
 
 1. **Do not open a public GitHub issue.**
-2. Use GitHub's [private security advisory](../../security/advisories/new) feature on this
+2. Use GitHub's [private security advisory](https://github.com/Ali-Khamis45/Multi-Agent-orkflow-/security/advisories/new) feature on this
    repository, or contact the maintainer directly.
 3. Include: what you found, how to reproduce it, and what you think the impact is.
 

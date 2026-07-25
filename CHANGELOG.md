@@ -23,7 +23,7 @@ consolidates them into one release rather than listing every intermediate commit
 - Correlation IDs threaded through every event, trace, and decision.
 - FluentValidation pipeline behavior + structured 400 responses.
 - Execution snapshots (`Checkpoint`) — the foundation of Execution Playback.
-- 12 controllers, 35 endpoints — see [docs/API.md](docs/API.md).
+- 12 controllers, 37 endpoints — see [docs/API.md](docs/API.md).
 
 **AI Runtime (`ai-runtime/`)**
 - Async agent framework (`AgentBase`) with 7 concrete specialist agents: Business Analyst, Project

@@ -33,7 +33,7 @@ versioned, documented, demoable whole.
 ## What's in this release
 
 See [CHANGELOG.md](../CHANGELOG.md) for the full list. In short: the complete three-service
-platform (`.NET` API, Python AI runtime, Next.js dashboard), 12 API controllers / 35 endpoints, 7
+platform (`.NET` API, Python AI runtime, Next.js dashboard), 12 API controllers / 37 endpoints, 7
 specialist agents, an 11-page Mission Control dashboard, and — new in this release specifically —
 a full documentation set, a code/security/performance review, and open-source release scaffolding.
 

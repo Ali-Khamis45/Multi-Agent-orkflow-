@@ -46,7 +46,7 @@ from that run.
 | Item | Status |
 |---|---|
 | Architecture docs (8 documents + 8 Mermaid diagrams) | ✅ |
-| API reference (all 12 controllers, 35 endpoints) | ✅ |
+| API reference (all 12 controllers, 37 endpoints) | ✅ |
 | Code / Security / Performance reviews | ✅ |
 | Deployment + Development guides | ✅ |
 | Roadmap (all 16 ARCHITECTURE_EXTENSION.md subsystems mapped to real status) | ✅ |
