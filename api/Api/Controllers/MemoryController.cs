@@ -29,4 +29,9 @@ public sealed class MemoryController(ISender sender) : ControllerBase
         [FromQuery] Guid workspaceId, [FromQuery] MemoryLayer layer, [FromQuery] Guid scopeRef,
         [FromQuery] int limit, CancellationToken ct) =>
         Ok(await sender.Send(new QueryMemoryQuery(workspaceId, layer, scopeRef, limit == 0 ? 20 : limit), ct));
+
+    [HttpGet("overview")]
+    public async Task<ActionResult<MemoryOverviewDto>> Overview(
+        [FromQuery] Guid workspaceId, [FromQuery] string? layer, [FromQuery] int limit, CancellationToken ct) =>
+        Ok(await sender.Send(new GetMemoryOverviewQuery(workspaceId, layer, limit == 0 ? 200 : limit), ct));
 }

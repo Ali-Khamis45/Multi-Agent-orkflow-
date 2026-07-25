@@ -69,3 +69,14 @@ export function layoutDag(nodes: TaskNode[], edges: TaskEdge[]): LayoutedNode[] 
 
   return result;
 }
+
+/** Widest column width = how many tasks this run ever had dispatched in
+ * parallel (e.g. Backend + Frontend sharing a column). Derived straight from
+ * the DAG topology already used to lay out the graph — no separate metric
+ * needed. */
+export function maxParallelism(nodes: TaskNode[], edges: TaskEdge[]): number {
+  const layouted = layoutDag(nodes, edges);
+  const byColumn = new Map<number, number>();
+  for (const { column } of layouted) byColumn.set(column, (byColumn.get(column) ?? 0) + 1);
+  return Math.max(0, ...byColumn.values());
+}

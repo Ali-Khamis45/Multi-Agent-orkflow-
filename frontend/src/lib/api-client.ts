@@ -9,9 +9,12 @@ import type {
   Artifact,
   ConfidencePoint,
   MemoryItem,
+  MemoryOverview,
   PromptEntry,
+  ReasoningTelemetry,
   ReasoningTrace,
   SupervisorDecision,
+  SupervisorSummary,
   WorkflowRun,
   Workspace,
 } from "./types";
@@ -102,6 +105,8 @@ export const api = {
   supervisor: {
     decisions: (workflowRunId: string) =>
       request<SupervisorDecision[]>(`/api/supervisor/decisions${qs({ workflowRunId })}`),
+    summary: (params: { workspaceId: string; limit?: number }) =>
+      request<SupervisorSummary>(`/api/supervisor/summary${qs(params)}`),
   },
 
   // ---- Artifacts ----
@@ -116,11 +121,17 @@ export const api = {
   memory: {
     query: (params: { workspaceId: string; layer: string; scopeRef: string; limit?: number }) =>
       request<MemoryItem[]>(`/api/memory${qs(params)}`),
+    overview: (params: { workspaceId: string; layer?: string; limit?: number }) =>
+      request<MemoryOverview>(`/api/memory/overview${qs(params)}`),
   },
 
   // ---- Reasoning ----
   reasoning: {
     traces: (taskNodeId: string) => request<ReasoningTrace[]>(`/api/reasoning/traces/${taskNodeId}`),
+    telemetry: (params: { workspaceId: string; pointsLimit?: number }) =>
+      request<ReasoningTelemetry>(`/api/reasoning/telemetry${qs(params)}`),
+    agentTraces: (agentName: string, limit = 100) =>
+      request<ReasoningTrace[]>(`/api/reasoning/agents/${encodeURIComponent(agentName)}/traces${qs({ limit })}`),
   },
 
   // ---- Prompt registry — proxied by the ASP.NET API (GET /api/prompts) from

@@ -11,6 +11,8 @@ import {
   Activity,
   ScrollText,
   Settings,
+  Radar,
+  HeartPulse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +23,9 @@ const NAV_ITEMS = [
   { href: "/artifacts", label: "Artifacts", icon: FileStack },
   { href: "/memory", label: "Memory", icon: BrainCircuit },
   { href: "/telemetry", label: "Telemetry", icon: Activity },
+  { href: "/supervisor", label: "Supervisor", icon: Radar },
   { href: "/prompts", label: "Prompt Registry", icon: ScrollText },
+  { href: "/health", label: "Project Health", icon: HeartPulse },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

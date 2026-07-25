@@ -127,6 +127,29 @@ export interface MemoryItem {
   createdAt: string;
 }
 
+export interface MemoryOverviewItem {
+  id: string;
+  layer: string;
+  scopeRef: string;
+  kind: string;
+  content: string;
+  sourceArtifactId: string | null;
+  version: number;
+  supersededById: string | null;
+  ttlAt: string | null;
+  createdAt: string;
+}
+
+export interface MemoryLayerCount {
+  layer: string;
+  count: number;
+}
+
+export interface MemoryOverview {
+  layerCounts: MemoryLayerCount[];
+  items: MemoryOverviewItem[];
+}
+
 export type ReasoningStage =
   | "Observe"
   | "Understand"
@@ -177,6 +200,16 @@ export interface SupervisorDecision {
   createdAt: string;
 }
 
+export interface DecisionTypeCount {
+  decisionType: SupervisorDecisionType;
+  count: number;
+}
+
+export interface SupervisorSummary {
+  counts: DecisionTypeCount[];
+  recent: SupervisorDecision[];
+}
+
 export interface PromptVersionInfo {
   version: number;
   file: string;
@@ -191,6 +224,33 @@ export interface PromptEntry {
   compatibleAgent: string;
   currentVersion: number;
   versions: PromptVersionInfo[];
+}
+
+export interface ReasoningStageMetric {
+  stage: string;
+  count: number;
+  avgDurationMs: number;
+  avgConfidence: number | null;
+  totalTokens: number;
+  totalToolCalls: number;
+  totalMemoryReads: number;
+  totalMemoryWrites: number;
+  totalRetries: number;
+}
+
+export interface ReasoningTracePoint {
+  at: string;
+  stage: string;
+  agent: string;
+  confidence: number | null;
+  durationMs: number;
+  tokens: number | null;
+  workflowRunId: string;
+}
+
+export interface ReasoningTelemetry {
+  stageMetrics: ReasoningStageMetric[];
+  recentPoints: ReasoningTracePoint[];
 }
 
 // Live SignalR event (matches AiAgentsTeam.Api.EventRelay.SignalRRelayHostedService payload).

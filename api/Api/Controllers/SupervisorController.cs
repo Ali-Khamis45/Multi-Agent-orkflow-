@@ -28,4 +28,9 @@ public sealed class SupervisorController(ISender sender) : ControllerBase
     public async Task<ActionResult<IReadOnlyCollection<SupervisorDecisionDto>>> GetDecisions(
         [FromQuery] Guid workflowRunId, CancellationToken ct) =>
         Ok(await sender.Send(new GetSupervisorDecisionsQuery(workflowRunId), ct));
+
+    [HttpGet("summary")]
+    public async Task<ActionResult<SupervisorSummaryDto>> GetSummary(
+        [FromQuery] Guid workspaceId, [FromQuery] int limit, CancellationToken ct) =>
+        Ok(await sender.Send(new GetSupervisorSummaryQuery(workspaceId, limit == 0 ? 100 : limit), ct));
 }

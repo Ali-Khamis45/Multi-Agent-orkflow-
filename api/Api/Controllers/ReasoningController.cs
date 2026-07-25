@@ -43,4 +43,14 @@ public sealed class ReasoningController(ISender sender) : ControllerBase
     [HttpGet("traces/{taskNodeId:guid}")]
     public async Task<ActionResult<IReadOnlyCollection<ReasoningTraceDto>>> GetTraces(Guid taskNodeId, CancellationToken ct) =>
         Ok(await sender.Send(new GetReasoningTracesQuery(taskNodeId), ct));
+
+    [HttpGet("telemetry")]
+    public async Task<ActionResult<ReasoningTelemetryDto>> GetTelemetry(
+        [FromQuery] Guid workspaceId, [FromQuery] int pointsLimit, CancellationToken ct) =>
+        Ok(await sender.Send(new GetReasoningTelemetryQuery(workspaceId, pointsLimit == 0 ? 300 : pointsLimit), ct));
+
+    [HttpGet("agents/{agentName}/traces")]
+    public async Task<ActionResult<IReadOnlyCollection<ReasoningTraceDto>>> GetAgentTraces(
+        string agentName, [FromQuery] int limit, CancellationToken ct) =>
+        Ok(await sender.Send(new GetAgentReasoningTracesQuery(agentName, limit == 0 ? 100 : limit), ct));
 }

@@ -30,3 +30,28 @@ public sealed class GetReasoningTracesQueryHandler(IApplicationDbContext db)
             .ToListAsync(cancellationToken);
     }
 }
+
+/// <summary>Cross-workflow reasoning feed for one agent — powers the Agent
+/// Profile's "Reasoning Timeline" (recent stages across every task the agent
+/// has ever run, not just one task node).</summary>
+public sealed record GetAgentReasoningTracesQuery(string AgentName, int Limit = 100)
+    : IRequest<IReadOnlyCollection<ReasoningTraceDto>>;
+
+public sealed class GetAgentReasoningTracesQueryHandler(IApplicationDbContext db)
+    : IRequestHandler<GetAgentReasoningTracesQuery, IReadOnlyCollection<ReasoningTraceDto>>
+{
+    public async Task<IReadOnlyCollection<ReasoningTraceDto>> Handle(GetAgentReasoningTracesQuery request, CancellationToken cancellationToken)
+    {
+        return await db.ReasoningTraces
+            .Where(t => t.Agent == request.AgentName)
+            .OrderByDescending(t => t.StartedAt)
+            .Take(request.Limit)
+            .Select(t => new ReasoningTraceDto(
+                t.Id, t.WorkflowRunId, t.CorrelationId, t.Agent, t.Stage.ToString(),
+                t.StartedAt, t.DurationMs, t.InputJson, t.OutputJson,
+                t.Tokens, t.Confidence, t.ModelUsed, t.RetryCount,
+                t.MemoryReads, t.MemoryWrites, t.ToolCalls, t.CostEstimate,
+                t.ErrorMessage, t.CreatedAt))
+            .ToListAsync(cancellationToken);
+    }
+}

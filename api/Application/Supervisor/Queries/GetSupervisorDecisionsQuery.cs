@@ -26,3 +26,38 @@ public sealed class GetSupervisorDecisionsQueryHandler(IApplicationDbContext db)
             .ToListAsync(cancellationToken);
     }
 }
+
+public sealed record DecisionTypeCountDto(string DecisionType, int Count);
+
+public sealed record SupervisorSummaryDto(
+    IReadOnlyCollection<DecisionTypeCountDto> Counts, IReadOnlyCollection<SupervisorDecisionDto> Recent);
+
+/// <summary>Workspace-wide Supervisor Brain feed (Phase 1.6) — every decision
+/// across every run, for the Supervisor page and the Telemetry Center's
+/// decision-type breakdown.</summary>
+public sealed record GetSupervisorSummaryQuery(Guid WorkspaceId, int Limit = 100) : IRequest<SupervisorSummaryDto>;
+
+public sealed class GetSupervisorSummaryQueryHandler(IApplicationDbContext db)
+    : IRequestHandler<GetSupervisorSummaryQuery, SupervisorSummaryDto>
+{
+    public async Task<SupervisorSummaryDto> Handle(GetSupervisorSummaryQuery request, CancellationToken cancellationToken)
+    {
+        var runIds = db.WorkflowRuns.Where(r => r.WorkspaceId == request.WorkspaceId).Select(r => r.Id);
+        var scoped = db.SupervisorDecisions.Where(d => runIds.Contains(d.WorkflowRunId));
+
+        var counts = await scoped
+            .GroupBy(d => d.DecisionType)
+            .Select(g => new DecisionTypeCountDto(g.Key.ToString(), g.Count()))
+            .ToListAsync(cancellationToken);
+
+        var recent = await scoped
+            .OrderByDescending(d => d.CreatedAt)
+            .Take(request.Limit)
+            .Select(d => new SupervisorDecisionDto(
+                d.Id, d.WorkflowRunId, d.CorrelationId, d.DecisionType.ToString(), d.InputSnapshotJson,
+                d.Rationale, d.Confidence, d.TargetNodeIdsJson, d.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        return new SupervisorSummaryDto(counts, recent);
+    }
+}

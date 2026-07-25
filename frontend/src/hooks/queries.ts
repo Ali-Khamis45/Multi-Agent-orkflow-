@@ -63,6 +63,14 @@ export const useSupervisorDecisions = (workflowRunId: string | undefined) =>
     enabled: !!workflowRunId,
   });
 
+export const useSupervisorSummary = (workspaceId: string | undefined) =>
+  useQuery({
+    queryKey: ["supervisor-summary", workspaceId],
+    queryFn: () => api.supervisor.summary({ workspaceId: workspaceId! }),
+    enabled: !!workspaceId,
+    refetchInterval: 15_000,
+  });
+
 // ---- Artifacts ----
 export const useArtifacts = (params: { workspaceId: string; workflowRunId?: string; type?: string; search?: string }) =>
   useQuery({
@@ -89,12 +97,35 @@ export const useMemory = (params: { workspaceId: string; layer: string; scopeRef
     enabled: !!params,
   });
 
+export const useMemoryOverview = (params: { workspaceId?: string; layer?: string } | undefined) =>
+  useQuery({
+    queryKey: ["memory-overview", params],
+    queryFn: () => api.memory.overview({ workspaceId: params!.workspaceId!, layer: params?.layer }),
+    enabled: !!params?.workspaceId,
+    refetchInterval: 15_000,
+  });
+
 // ---- Reasoning ----
 export const useReasoningTraces = (taskNodeId: string | undefined) =>
   useQuery({
     queryKey: ["reasoning-traces", taskNodeId],
     queryFn: () => api.reasoning.traces(taskNodeId!),
     enabled: !!taskNodeId,
+  });
+
+export const useReasoningTelemetry = (workspaceId: string | undefined) =>
+  useQuery({
+    queryKey: ["reasoning-telemetry", workspaceId],
+    queryFn: () => api.reasoning.telemetry({ workspaceId: workspaceId! }),
+    enabled: !!workspaceId,
+    refetchInterval: 15_000,
+  });
+
+export const useAgentReasoningTraces = (agentName: string | undefined) =>
+  useQuery({
+    queryKey: ["agent-reasoning-traces", agentName],
+    queryFn: () => api.reasoning.agentTraces(agentName!),
+    enabled: !!agentName,
   });
 
 // ---- Prompts ----
