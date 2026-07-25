@@ -12,6 +12,8 @@ import { useLiveWorkflow } from "@/hooks/use-live-workflow";
 import { ExecutionGraph } from "@/components/graph/execution-graph";
 import { SupervisorTimeline } from "@/components/workflows/supervisor-timeline";
 import { WorkflowArtifactsTab } from "@/components/workflows/workflow-artifacts-tab";
+import { ExecutionPlayback } from "@/components/workflows/execution-playback";
+import { WorkflowExportMenu } from "@/components/workflows/workflow-export-menu";
 
 export function WorkflowDetail({ runId }: { runId: string }) {
   const router = useRouter();
@@ -37,7 +39,7 @@ export function WorkflowDetail({ runId }: { runId: string }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-border px-6 py-4">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => router.push("/workflows")}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Back to workflow runs" onClick={() => router.push("/workflows")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <WorkflowIcon className="h-4 w-4 text-muted-foreground" />
@@ -49,17 +51,22 @@ export function WorkflowDetail({ runId }: { runId: string }) {
           {completed}/{total} tasks
         </span>
         <StatusBadge status={run.status} />
+        <WorkflowExportMenu run={run} />
       </div>
 
       <Tabs defaultValue="graph" className="flex min-h-0 flex-1 flex-col gap-0">
         <TabsList className="mx-6 mt-3 w-fit shrink-0">
           <TabsTrigger value="graph">Execution Graph</TabsTrigger>
+          <TabsTrigger value="playback">Playback</TabsTrigger>
           <TabsTrigger value="supervisor">Supervisor</TabsTrigger>
           <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
         </TabsList>
 
         <TabsContent value="graph" className="min-h-0 flex-1">
           <ExecutionGraph run={run} />
+        </TabsContent>
+        <TabsContent value="playback" className="min-h-0 flex-1">
+          <ExecutionPlayback run={run} />
         </TabsContent>
         <TabsContent value="supervisor" className="min-h-0 flex-1 overflow-y-auto">
           <SupervisorTimeline workflowRunId={run.id} />

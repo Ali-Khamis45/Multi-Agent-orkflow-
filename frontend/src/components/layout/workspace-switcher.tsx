@@ -5,6 +5,7 @@ import { Check, ChevronsUpDown, Building2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuLabel,
@@ -49,17 +50,19 @@ export function WorkspaceSwitcher() {
         <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Workspaces</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {workspaces?.map((ws) => (
-          <DropdownMenuItem key={ws.id} onSelect={() => setWorkspace(ws.id)} className="text-sm">
-            <Check className={cn("mr-2 h-3.5 w-3.5", ws.id === current?.id ? "opacity-100" : "opacity-0")} />
-            {ws.name}
-          </DropdownMenuItem>
-        ))}
-        {(!workspaces || workspaces.length === 0) && !isLoading && (
-          <div className="px-2 py-1.5 text-xs text-muted-foreground">No workspaces yet</div>
-        )}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Workspaces</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {workspaces?.map((ws) => (
+            <DropdownMenuItem key={ws.id} onClick={() => setWorkspace(ws.id)} className="text-sm">
+              <Check className={cn("mr-2 h-3.5 w-3.5", ws.id === current?.id ? "opacity-100" : "opacity-0")} />
+              {ws.name}
+            </DropdownMenuItem>
+          ))}
+          {(!workspaces || workspaces.length === 0) && !isLoading && (
+            <div className="px-2 py-1.5 text-xs text-muted-foreground">No workspaces yet</div>
+          )}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

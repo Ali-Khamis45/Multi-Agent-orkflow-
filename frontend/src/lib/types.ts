@@ -253,6 +253,39 @@ export interface ReasoningTelemetry {
   recentPoints: ReasoningTracePoint[];
 }
 
+export interface Checkpoint {
+  id: string;
+  workflowRunId: string;
+  label: string;
+  snapshotJson: string;
+  createdAt: string;
+}
+
+/**
+ * Parsed shape of Checkpoint.snapshotJson — see
+ * api/Application/Scheduling/SchedulerService.cs BuildCheckpoint. Unlike every
+ * other API response, this is a raw `JsonSerializer.Serialize` string embedded
+ * in a DTO field (never passed through ASP.NET's camelCase MVC formatter), so
+ * — like the Redis EventEnvelope — its keys are PascalCase.
+ */
+export interface CheckpointSnapshot {
+  Id: string;
+  WorkspaceId: string;
+  Status: string;
+  Nodes: {
+    Id: string;
+    Name: string;
+    TaskType: string;
+    Status: TaskNodeStatus;
+    AssignedAgentName: string | null;
+    Confidence: number | null;
+    RiskLevel: string | null;
+    AttemptCount: number;
+  }[];
+  Edges: { PredecessorNodeId: string; SuccessorNodeId: string }[];
+  SnapshottedAt: string;
+}
+
 // Live SignalR event (matches AiAgentsTeam.Api.EventRelay.SignalRRelayHostedService payload).
 export interface WorkflowEvent {
   type: string;

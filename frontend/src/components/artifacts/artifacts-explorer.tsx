@@ -62,7 +62,7 @@ export function ArtifactsExplorer() {
   );
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-[320px_1fr] gap-4">
+    <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
       <div className="flex min-h-0 flex-col gap-2">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -89,7 +89,7 @@ export function ArtifactsExplorer() {
           </Select>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-border/60">
+        <div className="max-h-72 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border/60 lg:max-h-none">
           {isLoading && (
             <div className="space-y-1 p-2">
               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}

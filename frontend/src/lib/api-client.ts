@@ -7,6 +7,7 @@ import type {
   Agent,
   AgentMetrics,
   Artifact,
+  Checkpoint,
   ConfidencePoint,
   MemoryItem,
   MemoryOverview,
@@ -99,6 +100,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ rawInput, workspaceId }),
       }),
+  },
+
+  // ---- Checkpoints (Execution Playback) ----
+  checkpoints: {
+    list: (workflowRunId: string) => request<Checkpoint[]>(`/api/checkpoints${qs({ workflowRunId })}`),
   },
 
   // ---- Supervisor ----

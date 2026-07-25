@@ -55,6 +55,14 @@ export const useSubmitIntake = () => {
   });
 };
 
+// ---- Checkpoints ----
+export const useCheckpoints = (workflowRunId: string | undefined) =>
+  useQuery({
+    queryKey: ["checkpoints", workflowRunId],
+    queryFn: () => api.checkpoints.list(workflowRunId!),
+    enabled: !!workflowRunId,
+  });
+
 // ---- Supervisor ----
 export const useSupervisorDecisions = (workflowRunId: string | undefined) =>
   useQuery({

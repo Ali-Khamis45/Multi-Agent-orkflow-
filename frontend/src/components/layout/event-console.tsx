@@ -46,7 +46,7 @@ export function EventConsole() {
           <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen ? "" : "-rotate-90")} />
         </button>
         {isOpen && (
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={clear} title="Clear">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={clear} title="Clear" aria-label="Clear event console">
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}

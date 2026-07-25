@@ -24,7 +24,7 @@ export function InspectorPanel() {
           <div className="flex h-full w-[380px] flex-col">
             <div className="flex h-11 shrink-0 items-center justify-between border-b border-border px-3">
               <span className="text-xs font-medium text-muted-foreground">Inspector</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={close}>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={close} aria-label="Close inspector panel">
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>
