@@ -118,6 +118,7 @@ docs/           Everything below
 | [Roadmap](docs/ROADMAP.md) · [FAQ](docs/FAQ.md) | What's next, common questions |
 | [Demo package](docs/demo/) | Scripts, slides, and a recruiter quickstart |
 | [Release Notes v1.0.0](docs/RELEASE_NOTES_v1.0.0.md) · [Changelog](CHANGELOG.md) | What shipped |
+| [Retrospective](docs/RETROSPECTIVE.md) | What went well, key decisions, bugs found, lessons learned |
 | [Contributing](CONTRIBUTING.md) · [Security Policy](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md) | Project governance |
 
 ## License
