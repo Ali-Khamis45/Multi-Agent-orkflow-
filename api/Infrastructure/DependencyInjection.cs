@@ -1,6 +1,7 @@
 using AiAgentsTeam.Application.Common.Interfaces;
 using AiAgentsTeam.Application.Common.Messaging;
 using AiAgentsTeam.Infrastructure.AiRuntime;
+using AiAgentsTeam.Infrastructure.Auth;
 using AiAgentsTeam.Infrastructure.EventBus;
 using AiAgentsTeam.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,10 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(aiRuntimeBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
         });
+
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.AddSingleton<IPasswordHasher, PasswordHasherService>();
+        services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
         return services;
     }

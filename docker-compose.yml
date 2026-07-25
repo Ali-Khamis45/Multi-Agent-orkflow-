@@ -41,6 +41,8 @@ services:
       ConnectionStrings__Redis: "redis:6379"
       Cors__AllowedOrigins__0: "http://localhost:3000"
       AiRuntime__BaseUrl: "http://ai-runtime:8000"
+      # Local-dev-only signing secret — see docs/DEPLOYMENT.md before deploying anywhere else.
+      Jwt__Secret: "local-dev-only-secret-change-me-before-any-real-deployment-32chars"
     ports:
       - "5080:8080"
 

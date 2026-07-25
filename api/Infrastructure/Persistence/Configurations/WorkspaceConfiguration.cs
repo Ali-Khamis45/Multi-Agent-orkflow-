@@ -11,5 +11,6 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.ToTable("workspaces");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).IsRequired().HasMaxLength(200);
+        builder.HasIndex(x => x.UserId);
     }
 }

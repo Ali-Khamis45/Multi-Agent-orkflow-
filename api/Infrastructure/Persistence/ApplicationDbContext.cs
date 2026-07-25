@@ -8,6 +8,7 @@ using AiAgentsTeam.Domain.Intent;
 using AiAgentsTeam.Domain.Memory;
 using AiAgentsTeam.Domain.Reasoning;
 using AiAgentsTeam.Domain.Supervisor;
+using AiAgentsTeam.Domain.Users;
 using AiAgentsTeam.Domain.Workflow;
 using AiAgentsTeam.Domain.Workspaces;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     : DbContext(options), IApplicationDbContext
 {
     public DbSet<Workspace> Workspaces => Set<Workspace>();
+    public DbSet<User> Users => Set<User>();
     public DbSet<AgentRegistration> AgentRegistrations => Set<AgentRegistration>();
     public DbSet<WorkflowDefinition> WorkflowDefinitions => Set<WorkflowDefinition>();
     public DbSet<WorkflowRun> WorkflowRuns => Set<WorkflowRun>();

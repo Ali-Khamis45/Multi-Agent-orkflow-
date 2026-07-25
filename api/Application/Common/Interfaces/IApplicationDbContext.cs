@@ -6,6 +6,7 @@ using AiAgentsTeam.Domain.Intent;
 using AiAgentsTeam.Domain.Memory;
 using AiAgentsTeam.Domain.Reasoning;
 using AiAgentsTeam.Domain.Supervisor;
+using AiAgentsTeam.Domain.Users;
 using AiAgentsTeam.Domain.Workflow;
 using AiAgentsTeam.Domain.Workspaces;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ namespace AiAgentsTeam.Application.Common.Interfaces;
 public interface IApplicationDbContext
 {
     DbSet<Workspace> Workspaces { get; }
+    DbSet<User> Users { get; }
     DbSet<AgentRegistration> AgentRegistrations { get; }
     DbSet<WorkflowDefinition> WorkflowDefinitions { get; }
     DbSet<WorkflowRun> WorkflowRuns { get; }

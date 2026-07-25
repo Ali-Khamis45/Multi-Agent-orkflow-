@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json.Serialization;
 using AiAgentsTeam.Api.EventRelay;
 using AiAgentsTeam.Api.Hubs;
@@ -5,8 +6,11 @@ using AiAgentsTeam.Api.Middleware;
 using AiAgentsTeam.Application;
 using AiAgentsTeam.Application.Scheduling;
 using AiAgentsTeam.Infrastructure;
+using AiAgentsTeam.Infrastructure.Auth;
 using AiAgentsTeam.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +26,28 @@ builder.Services.AddSignalR();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<SignalRRelayHostedService>();
+
+// Auth (Phase 2, "AI Enterprise OS") — the platform's first authentication layer;
+// see docs/reviews/SECURITY_REVIEW.md for what was true before this existed.
+var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+var jwtOptions = jwtSection.Get<JwtOptions>() ?? new JwtOptions();
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+    });
+builder.Services.AddAuthorization();
 
 // Configuration Layer (Phase 1.5 §9): retry policy is an operational tuning knob,
 // bound from appsettings/env per environment rather than a hardcoded constant.
@@ -49,10 +75,12 @@ if (app.Environment.IsDevelopment())
     db.Database.Migrate();
 }
 
-app.UseMiddleware<ValidationExceptionMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<ValidationExceptionMiddleware>();
 app.UseCors();
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
