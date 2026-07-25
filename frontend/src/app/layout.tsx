@@ -4,7 +4,7 @@ import "./globals.css";
 import { QueryProvider } from "@/lib/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
-import { AppShell } from "@/components/layout/app-shell";
+import { AuthGate } from "@/components/auth/auth-gate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +34,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <QueryProvider>
           <TooltipProvider delay={200}>
-            <AppShell>{children}</AppShell>
+            <AuthGate>{children}</AuthGate>
             <Toaster theme="dark" position="bottom-right" />
           </TooltipProvider>
         </QueryProvider>

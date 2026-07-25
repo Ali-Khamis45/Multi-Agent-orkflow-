@@ -19,6 +19,7 @@ import type {
   WorkflowRun,
   Workspace,
 } from "./types";
+import { getAuthToken } from "@/store/auth-store";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5080";
 
@@ -33,10 +34,12 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getAuthToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
   });
@@ -61,7 +64,37 @@ function qs(params: Record<string, string | number | boolean | undefined>): stri
   return s ? `?${s}` : "";
 }
 
+export interface AuthResult {
+  userId: string;
+  email: string;
+  name: string;
+  companyType: string;
+  token: string;
+}
+
+export interface CurrentUser {
+  userId: string;
+  email: string;
+  name: string;
+  companyType: string;
+}
+
 export const api = {
+  // ---- Auth ----
+  auth: {
+    register: (email: string, password: string, name: string, companyType: string) =>
+      request<AuthResult>("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password, name, companyType }),
+      }),
+    login: (email: string, password: string) =>
+      request<AuthResult>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      }),
+    me: () => request<CurrentUser>("/api/auth/me"),
+  },
+
   // ---- Workspaces ----
   workspaces: {
     list: () => request<Workspace[]>("/api/workspaces"),

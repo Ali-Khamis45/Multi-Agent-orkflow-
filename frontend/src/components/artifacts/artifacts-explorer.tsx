@@ -36,9 +36,9 @@ const TYPE_ICON: Record<ArtifactType, React.ComponentType<{ className?: string }
 
 const TYPES: (ArtifactType | "All")[] = ["All", "Markdown", "Code", "Json", "Test", "Dockerfile", "Sql", "Image", "Diagram"];
 
-export function ArtifactsExplorer() {
+export function ArtifactsExplorer({ defaultSearch = "" }: { defaultSearch?: string } = {}) {
   const workspaceId = useWorkspaceStore((s) => s.currentWorkspaceId);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(defaultSearch);
   const [type, setType] = useState<string>("All");
   const [runId, setRunId] = useState<string>("All");
   const [selectedId, setSelectedId] = useState<string | null>(null);

@@ -3,6 +3,7 @@
 import { Search, Terminal } from "lucide-react";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 import { MobileNav } from "./mobile-nav";
+import { UserMenu } from "./user-menu";
 import { Button } from "@/components/ui/button";
 import { useConsoleStore } from "@/store/console-store";
 import { useCommandPaletteStore } from "@/store/command-palette-store";
@@ -37,6 +38,7 @@ export function TopBar() {
           <Terminal className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Console</span>
         </Button>
+        <UserMenu />
       </div>
     </header>
   );
