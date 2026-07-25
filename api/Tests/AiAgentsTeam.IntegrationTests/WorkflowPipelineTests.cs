@@ -78,7 +78,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
 
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "test goal"));
 
@@ -95,7 +95,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
 
         var sessionId = await sender.Send(new StartIntentSessionCommand(ws, "Build a CRM", Guid.NewGuid()));
 
@@ -118,7 +118,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
 
         var taskType = Unique("Task");
         var agentName = Unique("agent");
@@ -159,7 +159,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "idempotency test"));
 
         var firstId = await sender.Send(new AddTaskNodeCommand(runId, "SameName", "TaskType", "{}"));
@@ -177,7 +177,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "supervisor test"));
 
         var decisionId = await sender.Send(new RecordSupervisorDecisionCommand(
@@ -193,7 +193,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
 
         var v1 = await sender.Send(new CreateArtifactCommand(
             ws, "Doc", ArtifactType.Markdown, "agent", "version one", null, null, null));
@@ -217,7 +217,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "by-name test"));
 
         var id = await sender.Send(new CreateArtifactCommand(
@@ -233,7 +233,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "idempotent artifact test"));
         var key = Unique("key");
 
@@ -250,7 +250,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
         var taskId = Guid.NewGuid();
 
         await sender.Send(new WriteMemoryItemCommand(
@@ -265,7 +265,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "trace test"));
         var nodeId = await sender.Send(new AddTaskNodeCommand(runId, "TracedNode", "Task", "{}"));
 
@@ -287,7 +287,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
     {
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
 
         var taskType = Unique("Task");
         var agentName = Unique("agent");
@@ -317,7 +317,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
 
         var taskType = Unique("Task");
         var agentName = Unique("agent");
@@ -358,7 +358,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         using var scope = fixture.NewScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws")));
+        var ws = await sender.Send(new AiAgentsTeam.Application.Workspaces.Commands.CreateWorkspaceCommand(Unique("ws"), Guid.NewGuid()));
 
         var taskType = Unique("Task");
         var agentName = Unique("agent");
