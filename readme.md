@@ -40,12 +40,13 @@ Three cooperating services:
   the live execution graph, per-agent reasoning traces, supervisor
   decisions, artifacts, memory, telemetry, and more.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design and phased build
-order, [ARCHITECTURE_EXTENSION.md](ARCHITECTURE_EXTENSION.md) for the
-16-subsystem enterprise extension layer this was built additively toward,
-[PHASE_1_5_HARDENING.md](PHASE_1_5_HARDENING.md) for the production-hardening
-pass, and [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) for measured
-performance numbers.
+See [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md) for the
+full system design (with diagrams), [ARCHITECTURE.md](ARCHITECTURE.md) for
+the original phased build order, [ARCHITECTURE_EXTENSION.md](ARCHITECTURE_EXTENSION.md)
+for the 16-subsystem enterprise extension layer this was built additively
+toward, [PHASE_1_5_HARDENING.md](PHASE_1_5_HARDENING.md) for the
+production-hardening pass, and [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md)
+for measured performance numbers.
 
 ## Quick start
 
@@ -95,35 +96,29 @@ artifacts, reasoning trace, and telemetry as JSON or Markdown).
 
 ## Project structure
 
+Full breakdown with rationale: [docs/architecture/OVERVIEW.md § Folder structure](docs/architecture/OVERVIEW.md#folder-structure).
+
 ```
 api/            ASP.NET Core orchestration service (Clean Architecture)
-  Domain/       Entities, aggregates, domain logic
-  Application/  CQRS queries/commands, DTOs
-  Infrastructure/  EF Core, Redis, AI-runtime HTTP client
-  Api/          Controllers, SignalR hubs, composition root
 ai-runtime/     Python FastAPI "brain" — agents, reasoning pipeline, Supervisor Brain
 frontend/       Mission Control — Next.js dashboard
-docs/           Screenshots and demo video for this README
+docs/           Everything below
 ```
 
-## Roadmap
+## Documentation
 
-Explicitly **not** built yet — called out in the product itself rather than
-hidden, wherever the UI has a natural place to say so:
-
-- **Vector Memory / Knowledge Graph** — the memory schema already carries a
-  `Score` field for embedding-similarity ranking; retrieval is still
-  recency-ordered, not semantic.
-- **Security Analyzer** — no static vulnerability scanning subsystem yet,
-  so Project Health reports Security as unmeasured rather than a guess.
-- **Maintainability analysis** — no lint/static-analysis integration over
-  generated code yet, same treatment.
-- **Distributed agent execution** — agents currently run in-process in the
-  Python runtime; the registry's `endpoint` field is wired for a future
-  distributed deployment but not load-bearing yet.
-- **Real LLM providers in CI/demo** — the shipped default is the
-  deterministic mock router; wiring a real provider is a one-line env var
-  away (`ANTHROPIC_API_KEY` etc.) but not exercised by the demo path.
+| | |
+|---|---|
+| [Architecture Overview](docs/architecture/OVERVIEW.md) | System design, diagrams, folder structure |
+| [Execution Flow](docs/architecture/EXECUTION_FLOW.md) · [Reasoning Engine](docs/architecture/REASONING_ENGINE.md) · [Supervisor Brain](docs/architecture/SUPERVISOR_BRAIN.md) | How a run actually executes |
+| [Agent Lifecycle](docs/architecture/AGENT_LIFECYCLE.md) · [Memory](docs/architecture/MEMORY.md) · [Event Bus](docs/architecture/EVENT_BUS.md) · [Workflow Engine](docs/architecture/WORKFLOW_ENGINE.md) | Core subsystems |
+| [API Reference](docs/API.md) | Every endpoint, DTO, error shape |
+| [Deployment](docs/DEPLOYMENT.md) · [Development Guide](docs/DEVELOPMENT.md) | Running this for real / hacking on it |
+| [Code Review](docs/reviews/CODE_REVIEW.md) · [Security Review](docs/reviews/SECURITY_REVIEW.md) · [Performance Review](docs/reviews/PERFORMANCE_REVIEW.md) | An honest, file:line-cited Release 1.0 audit |
+| [Roadmap](docs/ROADMAP.md) · [FAQ](docs/FAQ.md) | What's next, common questions |
+| [Demo package](docs/demo/) | Scripts, slides, and a recruiter quickstart |
+| [Release Notes v1.0.0](docs/RELEASE_NOTES_v1.0.0.md) · [Changelog](CHANGELOG.md) | What shipped |
+| [Contributing](CONTRIBUTING.md) · [Security Policy](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md) | Project governance |
 
 ## License
 
