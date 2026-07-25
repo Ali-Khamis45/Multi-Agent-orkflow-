@@ -5,6 +5,7 @@ import { Activity, CheckCircle2, XCircle, Bot, ArrowRight } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ActiveRunsList } from "@/components/dashboard/active-runs-list";
 import { AgentFleet } from "@/components/dashboard/agent-fleet";
+import { DemoModeCta } from "@/components/dashboard/demo-mode-cta";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -51,6 +52,8 @@ export default function DashboardPage() {
           New workflow <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </div>
+
+      <DemoModeCta />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <StatCard label="Active executions" value={activeCount} icon={Activity} tone="running" />
