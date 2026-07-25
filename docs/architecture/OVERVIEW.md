@@ -72,7 +72,8 @@ flowchart LR
 ```
 api/                              ASP.NET Core 10, Clean Architecture
   Domain/                         Entities, value objects, domain logic — zero dependencies
-    Agents/ Artifacts/ Checkpoints/ Common/ Failures/ Intent/ Memory/ Reasoning/ Supervisor/ Workflow/ Workspaces/
+    Agents/ Artifacts/ Checkpoints/ Common/ Failures/ Intent/ Memory/ Reasoning/ Supervisor/ Users/ Workflow/ Workspaces/
+                                   (Users/ holds User + CompanyType — Phase 2, see below)
   Application/                    CQRS (MediatR): one folder per feature, Commands/ + Queries/ inside
     Artifacts/ Checkpoints/ Intent/ Memory/ Observability/ Reasoning/ Registry/ Scheduling/ Supervisor/ Workflows/ Workspaces/
     Common/                       Shared interfaces (IApplicationDbContext, IEventBus, ...), pipeline behaviors
@@ -82,7 +83,7 @@ api/                              ASP.NET Core 10, Clean Architecture
 
 ai-runtime/                       Python 3.12 / FastAPI, the system's "brain"
   app/
-    agents/                       AgentBase + 7 concrete agents (declarative subclasses)
+    agents/                       AgentBase + 7 Software agents + 11 founder-* agents (Phase 2)
     clients/                      ApiClient (HTTP to .NET), RedisEventBus
     intent/                       Intent classification/complexity/ambiguity heuristics
     memory/                       MemoryClient (writes through the API, never direct)
@@ -99,12 +100,16 @@ ai-runtime/                       Python 3.12 / FastAPI, the system's "brain"
 frontend/                         Next.js 16 (App Router), React 19, TypeScript — Mission Control
   src/
     app/                          Routes: one folder per page (dashboard is app/page.tsx)
-    components/                   Feature-organized (agents/ artifacts/ dashboard/ graph/ health/
-                                   layout/ memory/ prompts/ supervisor/ telemetry/ workflows/),
-                                   plus shared/ and ui/ (shadcn primitives)
+                                   login/ register/ — Phase 2 auth pages
+                                   founder/ — Phase 2 Founder Workspace (own layout + 14 pages)
+    components/                   Feature-organized (agents/ artifacts/ auth/ dashboard/ founder/
+                                   graph/ health/ layout/ memory/ prompts/ supervisor/ telemetry/
+                                   workflows/), plus shared/ and ui/ (shadcn primitives)
     hooks/                        TanStack Query hooks — the only place components fetch data from
-    lib/                          api-client.ts (the only network boundary), types.ts, pure helpers
-    store/                        Zustand stores for client-only UI state
+    lib/                          api-client.ts (the only network boundary — attaches the JWT),
+                                   types.ts, pure helpers
+    store/                        Zustand stores for client-only UI state, incl. auth-store.ts
+                                   (JWT + current user, Phase 2) and workspace-store.ts
 
 docs/                              Everything you're reading now
   architecture/                    This directory
@@ -112,6 +117,61 @@ docs/                              Everything you're reading now
   demo/                            Demo package (Release 1.0)
   screenshots/ video/              Mission Control tour assets
 ```
+
+## Phase 2 — AI Enterprise OS (Workspaces)
+
+Release 1.0 shipped one product: an autonomous AI software engineering company. Phase 2 turns the
+same shared infrastructure into a platform with multiple **Workspaces** — a Workspace is a
+specialized AI company (its own agents, its own fixed pipeline, its own frontend shell) built on
+top of the infrastructure above, which stays exactly as documented in every section above it.
+Nothing in §"System design" changed: still three services, still the same two enforced boundaries.
+
+Two Workspaces exist today: **Software Company** (Release 1.0, unchanged) and **Founder Workspace**
+(new — a business operating system for startup founders, with 11 specialist agents: CEO, Business
+Analyst, Market/Customer Researcher, Brand Strategist, Financial Advisor, Marketing Director,
+Operations Manager, Sales Strategist, Growth Strategist, Legal Advisor).
+
+**A user belongs to exactly one Workspace, chosen at registration and permanent.** This is modeled
+as a `CompanyType` (`SoftwareCompany` | `Founder`) on the new `User` entity — deliberately *not* a
+new meaning for the pre-existing `Workspace` entity (a named project container, many-per-user,
+unrelated to product routing; see `Domain/Workspaces/`). A `User` owns one or more `Workspace`s; a
+`User` has exactly one `CompanyType`.
+
+```mermaid
+flowchart TB
+    Reg["POST /api/auth/register<br/>{ email, password, name, companyType }"] --> JWT["JWT<br/>company_type claim"]
+    JWT --> Intake["POST /api/intake (Authorize)<br/>companyType read from JWT, never the body"]
+    Intake --> Branch{"CompanyType"}
+    Branch -->|SoftwareCompany| SWPipe["7-node Software pipeline<br/>(unchanged from Release 1.0)"]
+    Branch -->|Founder| FPipe["11-node Founder pipeline<br/>CEO → BizModel → {Market,Customer}<br/>→ Brand → {Fin,Mktg,Ops,Sales} → Growth → Legal"]
+    SWPipe --> Sched["DAG Scheduler §5.2 (unchanged)"]
+    FPipe --> Sched
+```
+
+What this added, concretely:
+- **Auth**: JWT bearer (`api/auth/register|login|me`) — see [API Reference](../API.md#auth--apiauth).
+- **"Master Supervisor" is JWT-derived routing, not a new classifier.** Because `CompanyType` is
+  fixed per account, the spec's "classify which company a request belongs to" responsibility is
+  already resolved by authentication: `IntakeController` reads `company_type` off the caller's own
+  token. No separate cross-company intent-classification service was built — it would have
+  duplicated what the JWT already guarantees.
+- **CompanyType-scoped Agent Registry**: `AgentRegistration` is now unique on `(Name, CompanyType)`,
+  not `Name` alone, so both companies can register an agent with the same short role name. The
+  Python-side agent dict avoids this entirely by prefixing every Founder agent's name with
+  `founder-`.
+- **Supervisor Brain gained a second fixed pipeline** (`app/supervisor/supervisor_agent.py`),
+  selected by the `companyType` threaded from `kickoff()` through to DAG expansion — the Software
+  pipeline's code path is untouched.
+- **Frontend**: a route guard (`components/auth/auth-gate.tsx`) enforces "Software users cannot
+  access Founder pages, Founder users cannot access Software pages" for every route, present and
+  future, without each page needing its own check. The Founder Workspace gets its own shell
+  (`app/founder/`) — sidebar, dashboard, and 14 pages — rather than reusing Mission Control's
+  Software-flavored chrome.
+
+**Known gap, tracked rather than hidden:** the .NET Scheduler still matches ready tasks to agents by
+`TaskType` alone, with no `CompanyType` filter — safe today only because every Founder task type
+was deliberately named distinctly from every Software task type. A future hardening pass should add
+the same `CompanyType` scoping the Registry already has.
 
 ## Where to go next
 

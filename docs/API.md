@@ -8,17 +8,37 @@ through this API.
 
 ## Authentication
 
-**None.** Every endpoint below is open to any caller who can reach the port. This is a deliberate,
-documented scope boundary for this release — see [Security Review §1](reviews/SECURITY_REVIEW.md#1-authentication--authorization)
-and [Deployment](DEPLOYMENT.md#before-deploying-anywhere-beyond-localhost) before exposing this API
-beyond localhost.
+**Phase 2 ("AI Enterprise OS") added JWT bearer authentication.** Register or log in via
+`api/auth` below to get a token; send it as `Authorization: Bearer <token>` on every endpoint
+marked 🔒 in the sections below. Endpoints with no lock are either intentionally public
+(`api/auth/register`, `api/auth/login`) or server-to-server only (see each section).
+
+A user's `CompanyType` (`SoftwareCompany` or `Founder`) is fixed at registration and embedded in
+the token as a `company_type` claim — every CompanyType-scoped endpoint (Registry, Intake) reads
+it from there, never from the request body, so a caller can never route a request into a company
+they don't belong to. See [Architecture Overview](architecture/OVERVIEW.md#phase-2--ai-enterprise-os-workspaces).
+
+This supersedes the "no authentication" gap noted in
+[Security Review §1](reviews/SECURITY_REVIEW.md#1-authentication--authorization) for Release 1.0 —
+that review predates Phase 2 and describes the Release 1.0 snapshot, not current behavior.
 
 ## Errors
 
-Two shapes exist today (see [Code Review §1](reviews/CODE_REVIEW.md#high-severity-no-global-exception-handling-middleware)
-for the gap this implies):
+**`GlobalExceptionMiddleware`** now maps exceptions to a consistent JSON error shape across every
+endpoint:
 
-**Validation failures** (FluentValidation, for the ~7 commands that have a validator registered) —
+| Exception | Status |
+|---|---|
+| `KeyNotFoundException` | `404 Not Found` |
+| `UnauthorizedAccessException` (e.g. bad login credentials) | `401 Unauthorized` |
+| `ConflictException` (e.g. duplicate email on register) | `409 Conflict` |
+| anything else | `500` (logged server-side with the request's correlation id) |
+
+```json
+{ "title": "Not Found", "status": 404, "detail": "..." }
+```
+
+FluentValidation failures (for commands with a validator registered) still surface separately as
 `400 Bad Request`:
 ```json
 {
@@ -28,22 +48,37 @@ for the gap this implies):
 }
 ```
 
-**Missing-resource failures** (`KeyNotFoundException`, thrown by most handlers when an id doesn't
-resolve) currently surface as a **bare 500** with no structured body — not yet mapped to a 404. If
-you're integrating against this API today, treat any 500 on a lookup-by-id call as "probably not
-found" until this is fixed (tracked in the [Roadmap](ROADMAP.md)).
-
-A handful of query endpoints (e.g. `GET /api/workflows/runs/{id}`) do check for `null` explicitly
-and return a proper `404 Not Found` — inconsistent with the above until the global handler lands.
+This supersedes the "bare 500, no structured body" gap noted in
+[Code Review §1](reviews/CODE_REVIEW.md#high-severity-no-global-exception-handling-middleware) for
+Release 1.0 — that review predates Phase 2.
 
 ---
+
+## Auth — `api/auth`
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | `{ "email", "password", "name", "companyType": "SoftwareCompany" \| "Founder" }` | `{ userId, email, name, companyType, token }` |
+| `POST` | `/api/auth/login` | `{ "email", "password" }` | `{ userId, email, name, companyType, token }` |
+| 🔒 `GET` | `/api/auth/me` | — | `{ userId, email, name, companyType }` |
+
+Registration also creates a `Workspace` named `"default"` owned by the new user in the same
+transaction — every user has exactly one workspace to start with. `companyType` is permanent —
+there is no endpoint to change it after registration.
+
+```bash
+curl -X POST http://localhost:5080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"a@b.com","password":"password123","name":"Ada","companyType":"Founder"}'
+# → {"userId":"...","email":"a@b.com","name":"Ada","companyType":"Founder","token":"eyJ..."}
+```
 
 ## Workspaces — `api/workspaces`
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| `POST` | `/api/workspaces` | `{ "name": string }` | `Guid` (new workspace id) |
-| `GET` | `/api/workspaces` | — | `Workspace[]` — `{ id, name, createdAt }`, newest first |
+| `POST` | `/api/workspaces` | `{ "name": string }` | `Guid` (new workspace id) — accepts either a valid JWT (owner = caller) or an `X-Internal-Service-Key` header matching the server's configured key (owner = none, used by the AI Runtime's own startup bootstrap) |
+| 🔒 `GET` | `/api/workspaces` | — | `Workspace[]` — `{ id, name, createdAt }`, scoped to the caller's own workspaces, newest first |
 
 ## Intake — `api/intake`
 
@@ -52,11 +87,18 @@ runtime (see [Architecture Overview](architecture/OVERVIEW.md#system-design)).
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| `POST` | `/api/intake` | `{ "rawInput": string, "workspaceId"?: Guid }` | `{ "workflowRunId": Guid }` |
+| 🔒 `POST` | `/api/intake` | `{ "rawInput": string, "workspaceId"?: Guid }` | `{ "workflowRunId": Guid }` |
+
+`companyType` is **not** a request field — it's read from the caller's JWT and determines which
+fixed Supervisor pipeline runs (Software Company's 7-node pipeline, or Founder's 11-node pipeline;
+see [Supervisor Brain](architecture/SUPERVISOR_BRAIN.md)).
 
 ```bash
+TOKEN=$(curl -s -X POST http://localhost:5080/api/auth/login \
+  -H "Content-Type: application/json" -d '{"email":"a@b.com","password":"password123"}' \
+  | jq -r .token)
 curl -X POST http://localhost:5080/api/intake \
-  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"rawInput":"Build a Task Management SaaS","workspaceId":"<workspace-guid>"}'
 # → {"workflowRunId":"2962bc19-..."}
 ```
@@ -121,11 +163,16 @@ Powers [Execution Playback](architecture/WORKFLOW_ENGINE.md#checkpoints--executi
 
 ## Registry — `api/registry`
 
+`POST`/`PUT` are server-to-server (agent self-registration/heartbeat on startup, before any user
+session exists) and stay unauthenticated. `GET` is scoped to the caller's own `CompanyType` — a
+Software Company user sees the 7 Software agents; a Founder user sees the 11 `founder-*` agents;
+neither ever sees the other's.
+
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| `POST` | `/api/registry/agents` | agent registration payload | — |
-| `PUT` | `/api/registry/agents/{name}/heartbeat` | — | — |
-| `GET` | `/api/registry/agents` | — | `AgentDto[]` — `{ name, version, description, skills, supportedTasks, priority, status, inFlightTaskCount, lastHeartbeatAt }` |
+| `POST` | `/api/registry/agents` | agent registration payload (includes `companyType`) | — |
+| `PUT` | `/api/registry/agents/{name}/heartbeat?companyType=` | — | — |
+| 🔒 `GET` | `/api/registry/agents` | — | `AgentDto[]` — `{ name, version, description, skills, supportedTasks, priority, status, inFlightTaskCount, lastHeartbeatAt, companyType }` |
 
 ## Supervisor — `api/supervisor`
 

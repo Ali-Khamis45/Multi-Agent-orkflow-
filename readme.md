@@ -1,11 +1,15 @@
 # AI Agents Team
 
-**An autonomous AI software engineering company** — submit a one-line goal like
-*"Build a Task Management SaaS"* and watch a supervised fleet of specialist
-agents turn it into requirements, architecture, backend and frontend code,
-a code review, and a QA pass, coordinated through a dynamically generated
-DAG — with every decision, reasoning stage, and artifact observable live in
-**Mission Control**, the system's own Next.js dashboard.
+**An AI Enterprise Platform with multiple Workspaces** — register and choose a Workspace, and a
+supervised fleet of AI specialists runs your company for you. Today there are two: the original
+**Software Company** (submit a one-line goal like *"Build a Task Management SaaS"* and watch it
+become requirements, architecture, backend/frontend code, a code review, and a QA pass), and the
+new **Founder Workspace** (submit a business idea and watch 11 AI specialists — CEO, Business
+Analyst, Market/Customer Research, Brand, Finance, Marketing, Operations, Sales, Growth, Legal —
+turn it into a business model canvas, brand identity, financial projection, marketing plan, and
+launch strategy). Both run on the same shared platform, coordinated through a dynamically generated
+DAG, with every decision, reasoning stage, and artifact observable live in each Workspace's own
+dashboard.
 
 <p align="center">
   <img src="docs/screenshots/03-execution-graph.png" alt="Mission Control — live execution graph" width="850">
@@ -64,6 +68,10 @@ No API keys are required. `ai-runtime`'s Multi-Model Router runs entirely on
 a deterministic mock provider unless `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` /
 `GEMINI_API_KEY` / `OLLAMA_HOST` is set (see `ai-runtime/.env.example`), so a
 fresh clone can run a full pipeline immediately.
+
+First visit redirects to `/register` — create an account and choose your
+Workspace (Software Company or Founder Workspace). This choice is permanent:
+it decides which dashboard, agents, and pipeline you get for that account.
 
 **Fastest way to see it work:** open the dashboard and click **Run demo** on
 the Portfolio Demo banner — it submits *"Build a Task Management SaaS"* to
