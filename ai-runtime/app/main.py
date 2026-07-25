@@ -20,6 +20,17 @@ from app.agents.backend_engineer import BackendEngineerAgent
 from app.agents.base import AgentBase
 from app.agents.business_analyst import BusinessAnalystAgent
 from app.agents.code_reviewer import CodeReviewerAgent
+from app.agents.founder_brand_strategist import FounderBrandStrategistAgent
+from app.agents.founder_business_analyst import FounderBusinessAnalystAgent
+from app.agents.founder_ceo import FounderCeoAgent
+from app.agents.founder_customer_researcher import FounderCustomerResearcherAgent
+from app.agents.founder_financial_advisor import FounderFinancialAdvisorAgent
+from app.agents.founder_growth_strategist import FounderGrowthStrategistAgent
+from app.agents.founder_legal_advisor import FounderLegalAdvisorAgent
+from app.agents.founder_market_researcher import FounderMarketResearcherAgent
+from app.agents.founder_marketing_director import FounderMarketingDirectorAgent
+from app.agents.founder_operations_manager import FounderOperationsManagerAgent
+from app.agents.founder_sales_strategist import FounderSalesStrategistAgent
 from app.agents.frontend_engineer import FrontendEngineerAgent
 from app.agents.project_manager import ProjectManagerAgent
 from app.agents.qa_engineer import QaEngineerAgent
@@ -43,6 +54,7 @@ from app.tools.registry import ToolRegistry
 logger = get_logger(__name__)
 
 AGENT_CLASSES: list[type[AgentBase]] = [
+    # SoftwareCompany (Phase 1)
     BusinessAnalystAgent,
     ProjectManagerAgent,
     SystemArchitectAgent,
@@ -50,6 +62,18 @@ AGENT_CLASSES: list[type[AgentBase]] = [
     FrontendEngineerAgent,
     CodeReviewerAgent,
     QaEngineerAgent,
+    # Founder (Phase 2, "AI Enterprise OS")
+    FounderCeoAgent,
+    FounderBusinessAnalystAgent,
+    FounderMarketResearcherAgent,
+    FounderCustomerResearcherAgent,
+    FounderBrandStrategistAgent,
+    FounderFinancialAdvisorAgent,
+    FounderMarketingDirectorAgent,
+    FounderOperationsManagerAgent,
+    FounderSalesStrategistAgent,
+    FounderGrowthStrategistAgent,
+    FounderLegalAdvisorAgent,
 ]
 
 
@@ -60,7 +84,7 @@ class Runtime:
     def __init__(self) -> None:
         settings = get_settings()
         self.settings = settings
-        self.api = ApiClient(settings.api_base_url)
+        self.api = ApiClient(settings.api_base_url, internal_service_key=settings.internal_service_key)
         self.event_bus = RedisEventBus(settings.redis_url)
         self.model_router = ModelRouter(settings)
 

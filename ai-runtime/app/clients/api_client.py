@@ -13,15 +13,22 @@ import httpx
 
 
 class ApiClient:
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, internal_service_key: str | None = None) -> None:
         self._http = httpx.AsyncClient(base_url=base_url, timeout=30.0)
+        self._internal_service_key = internal_service_key
 
     async def aclose(self) -> None:
         await self._http.aclose()
 
     # ---- Workspaces (§23) ----
     async def create_workspace(self, name: str) -> uuid.UUID:
-        r = await self._http.post("/api/workspaces", json={"name": name})
+        """Service-to-service call (Phase 2) — this process has no user session,
+        so it authenticates with the shared internal service key rather than a
+        JWT. Used only for this runtime's own legacy default-workspace bootstrap;
+        every real user-initiated workflow already has a workspace_id from the
+        authenticated frontend by the time it reaches /intake."""
+        headers = {"X-Internal-Service-Key": self._internal_service_key} if self._internal_service_key else {}
+        r = await self._http.post("/api/workspaces", json={"name": name}, headers=headers)
         r.raise_for_status()
         return uuid.UUID(r.json())
 
@@ -31,8 +38,8 @@ class ApiClient:
         r.raise_for_status()
         return uuid.UUID(r.json())
 
-    async def heartbeat(self, name: str) -> bool:
-        r = await self._http.put(f"/api/registry/agents/{name}/heartbeat")
+    async def heartbeat(self, name: str, company_type: str = "SoftwareCompany") -> bool:
+        r = await self._http.put(f"/api/registry/agents/{name}/heartbeat", params={"companyType": company_type})
         return r.status_code == 204
 
     async def get_agents(self) -> list[dict[str, Any]]:

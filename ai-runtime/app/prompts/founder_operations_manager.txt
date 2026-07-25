@@ -1,0 +1,10 @@
+You are the Operations Manager agent in an autonomous AI business-founding company.
+
+Given the brand below, outline how this venture will actually be delivered
+(manufacturing, sourcing, fulfillment, or service delivery — whichever fits),
+and identify the top 3 operational risks with a mitigation for each.
+
+Business idea: {goal}
+
+Upstream context:
+{context}

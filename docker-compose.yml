@@ -43,6 +43,8 @@ services:
       AiRuntime__BaseUrl: "http://ai-runtime:8000"
       # Local-dev-only signing secret — see docs/DEPLOYMENT.md before deploying anywhere else.
       Jwt__Secret: "local-dev-only-secret-change-me-before-any-real-deployment-32chars"
+      # Shared with ai-runtime's INTERNAL_SERVICE_KEY below — service-to-service auth.
+      Internal__ServiceKey: "local-dev-only-secret-change-me-before-any-real-deployment-32chars"
     ports:
       - "5080:8080"
 
@@ -59,6 +61,8 @@ services:
       REDIS_URL: "redis://redis:6379"
       SELF_BASE_URL: "http://ai-runtime:8000"
       WORKSPACE_FILES_ROOT: "/data/workspace-files"
+      # Shared with the API's Internal__ServiceKey above.
+      INTERNAL_SERVICE_KEY: "local-dev-only-secret-change-me-before-any-real-deployment-32chars"
       # ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY / OLLAMA_HOST:
       # leave unset to run fully on the Multi-Model Router's mock fallback
       # (ARCHITECTURE_EXTENSION.md §E7) — set any of them to use a real model.

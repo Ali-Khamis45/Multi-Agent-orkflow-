@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using AiAgentsTeam.Api;
 using AiAgentsTeam.Api.EventRelay;
 using AiAgentsTeam.Api.Hubs;
 using AiAgentsTeam.Api.Middleware;
@@ -48,6 +49,7 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.Configure<InternalServiceOptions>(builder.Configuration.GetSection(InternalServiceOptions.SectionName));
 
 // Configuration Layer (Phase 1.5 §9): retry policy is an operational tuning knob,
 // bound from appsettings/env per environment rather than a hardcoded constant.

@@ -44,13 +44,13 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         var agentName = Unique("agent");
 
         await sender.Send(new RegisterAgentCommand(
-            agentName, "1.0.0", "test agent", ["skill"], ["TestTask"], 50,
+            agentName, AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany, "1.0.0", "test agent", ["skill"], ["TestTask"], 50,
             [], [], [], [], [], $"http://test/{agentName}", null, Guid.NewGuid()));
 
-        var heartbeatOk = await sender.Send(new HeartbeatCommand(agentName));
+        var heartbeatOk = await sender.Send(new HeartbeatCommand(agentName, AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany));
         Assert.True(heartbeatOk);
 
-        var agents = await sender.Send(new GetAgentsQuery());
+        var agents = await sender.Send(new GetAgentsQuery(AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany));
         Assert.Contains(agents, a => a.Name == agentName && a.SupportedTasks.Contains("TestTask"));
     }
 
@@ -62,11 +62,11 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         var agentName = Unique("agent");
 
         await sender.Send(new RegisterAgentCommand(
-            agentName, "1.0.0", "v1", ["a"], ["TaskA"], 10, [], [], [], [], [], "http://test/1", null, Guid.NewGuid()));
+            agentName, AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany, "1.0.0", "v1", ["a"], ["TaskA"], 10, [], [], [], [], [], "http://test/1", null, Guid.NewGuid()));
         await sender.Send(new RegisterAgentCommand(
-            agentName, "2.0.0", "v2", ["a", "b"], ["TaskA", "TaskB"], 20, [], [], [], [], [], "http://test/2", null, Guid.NewGuid()));
+            agentName, AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany, "2.0.0", "v2", ["a", "b"], ["TaskA", "TaskB"], 20, [], [], [], [], [], "http://test/2", null, Guid.NewGuid()));
 
-        var agents = await sender.Send(new GetAgentsQuery());
+        var agents = await sender.Send(new GetAgentsQuery(AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany));
         var matches = agents.Where(a => a.Name == agentName).ToList();
         Assert.Single(matches);
         Assert.Equal("2.0.0", matches[0].Version);
@@ -123,7 +123,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         var taskType = Unique("Task");
         var agentName = Unique("agent");
         await sender.Send(new RegisterAgentCommand(
-            agentName, "1.0.0", "test", [], [taskType], 10, [], [], [], [], [], "http://test", null, ws));
+            agentName, AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany, "1.0.0", "test", [], [taskType], 10, [], [], [], [], [], "http://test", null, ws));
 
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "parallel test"));
         var root = await sender.Send(new AddTaskNodeCommand(runId, "Root", taskType, "{}"));
@@ -292,7 +292,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         var taskType = Unique("Task");
         var agentName = Unique("agent");
         await sender.Send(new RegisterAgentCommand(
-            agentName, "1.0.0", "test", [], [taskType], 10, [], [], [], [], [], "http://test", null, ws));
+            agentName, AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany, "1.0.0", "test", [], [taskType], 10, [], [], [], [], [], "http://test", null, ws));
 
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "retry test"));
         var nodeId = await sender.Send(new AddTaskNodeCommand(runId, "FlakyNode", taskType, "{}"));
@@ -322,7 +322,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         var taskType = Unique("Task");
         var agentName = Unique("agent");
         await sender.Send(new RegisterAgentCommand(
-            agentName, "1.0.0", "test", [], [taskType], 10, [], [], [], [], [], "http://test", null, ws));
+            agentName, AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany, "1.0.0", "test", [], [taskType], 10, [], [], [], [], [], "http://test", null, ws));
 
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "non-retryable test"));
         var nodeId = await sender.Send(new AddTaskNodeCommand(runId, "PermissionDenied", taskType, "{}"));
@@ -363,7 +363,7 @@ public sealed class WorkflowPipelineTests(PipelineTestFixture fixture)
         var taskType = Unique("Task");
         var agentName = Unique("agent");
         await sender.Send(new RegisterAgentCommand(
-            agentName, "1.0.0", "test", [], [taskType], 10, [], [], [], [], [], "http://test", null, ws));
+            agentName, AiAgentsTeam.Domain.Users.CompanyType.SoftwareCompany, "1.0.0", "test", [], [taskType], 10, [], [], [], [], [], "http://test", null, ws));
 
         var runId = await sender.Send(new CreateWorkflowRunCommand(ws, "snapshot test"));
         var nodeId = await sender.Send(new AddTaskNodeCommand(runId, "OnlyNode", taskType, "{}"));

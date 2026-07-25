@@ -1,4 +1,5 @@
 using AiAgentsTeam.Domain.Common;
+using AiAgentsTeam.Domain.Users;
 
 namespace AiAgentsTeam.Domain.Agents;
 
@@ -6,10 +7,14 @@ namespace AiAgentsTeam.Domain.Agents;
 /// A row in the Dynamic Agent Registry (ARCHITECTURE.md §4). Agents self-register
 /// via POST /api/registry/agents with this manifest shape; the Supervisor/Scheduler
 /// never hardcodes agent identity, only resolves candidates from this table.
+/// Scoped by <see cref="Users.CompanyType"/> (Phase 2) — each company has its own
+/// agent set, so "business-analyst" can exist once for SoftwareCompany and once,
+/// distinctly, for Founder; uniqueness is (Name, CompanyType), not Name alone.
 /// </summary>
 public class AgentRegistration : Entity
 {
     public string Name { get; private set; } = default!;
+    public CompanyType CompanyType { get; private set; }
     public string Version { get; private set; } = default!;
     public string Description { get; private set; } = default!;
 
@@ -33,6 +38,7 @@ public class AgentRegistration : Entity
 
     public AgentRegistration(
         string name,
+        CompanyType companyType,
         string version,
         string description,
         List<string> skills,
@@ -47,6 +53,7 @@ public class AgentRegistration : Entity
         string? healthCheck)
     {
         Name = name;
+        CompanyType = companyType;
         Version = version;
         Description = description;
         Skills = skills;

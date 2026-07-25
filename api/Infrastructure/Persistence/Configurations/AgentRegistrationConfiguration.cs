@@ -10,9 +10,10 @@ public class AgentRegistrationConfiguration : IEntityTypeConfiguration<AgentRegi
     {
         builder.ToTable("agent_registrations");
         builder.HasKey(x => x.Id);
-        builder.HasIndex(x => x.Name).IsUnique();
+        builder.HasIndex(x => new { x.Name, x.CompanyType }).IsUnique();
 
         builder.Property(x => x.Name).IsRequired().HasMaxLength(200);
+        builder.Property(x => x.CompanyType).HasConversion<string>().HasMaxLength(50);
         builder.Property(x => x.Version).IsRequired().HasMaxLength(50);
         builder.Property(x => x.Description).IsRequired();
         builder.Property(x => x.Endpoint).IsRequired();

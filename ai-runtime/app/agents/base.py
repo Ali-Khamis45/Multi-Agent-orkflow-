@@ -30,6 +30,10 @@ class AgentBase(ABC):
     name: str
     version: str = "0.1.0"
     description: str
+    # Which specialized AI company this agent belongs to (Phase 2, "AI Enterprise
+    # OS"). Every agent that existed before Phase 2 is implicitly a SoftwareCompany
+    # agent; only Founder-workspace agents need to set this explicitly.
+    company_type: str = "SoftwareCompany"
     skills: list[str] = []
     supported_tasks: list[str] = []
     priority: int = 50
@@ -72,6 +76,7 @@ class AgentBase(ABC):
         """The self-registration manifest (ARCHITECTURE.md §4.1)."""
         return {
             "name": self.name,
+            "companyType": self.company_type,
             "version": self.version,
             "description": self.description,
             "skills": self.skills,
@@ -93,7 +98,7 @@ class AgentBase(ABC):
     async def heartbeat_loop(self, interval_seconds: float, stop_event: asyncio.Event) -> None:
         while not stop_event.is_set():
             try:
-                await self.api.heartbeat(self.name)
+                await self.api.heartbeat(self.name, self.company_type)
             except Exception:
                 self.logger.warning("heartbeat failed", extra={"fields": {"agent": self.name}})
             try:

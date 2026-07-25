@@ -4,7 +4,10 @@ using MediatR;
 
 namespace AiAgentsTeam.Application.Workspaces.Commands;
 
-public sealed record CreateWorkspaceCommand(string Name, Guid UserId) : IRequest<Guid>;
+/// <summary>UserId is null only for the AI runtime's own service-to-service
+/// bootstrap call (see WorkspacesController) — every user-initiated workspace is
+/// owned.</summary>
+public sealed record CreateWorkspaceCommand(string Name, Guid? UserId) : IRequest<Guid>;
 
 public sealed class CreateWorkspaceCommandHandler(IApplicationDbContext db) : IRequestHandler<CreateWorkspaceCommand, Guid>
 {

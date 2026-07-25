@@ -110,5 +110,159 @@
         "created_at": "2026-07-24"
       }
     ]
+  },
+  "founder_ceo": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-ceo",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_ceo.txt",
+        "description": "Frames the executive summary and overall venture vision from the raw idea.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_business_analyst": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-business-analyst",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_business_analyst.txt",
+        "description": "Business Model Canvas + SWOT analysis.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_market_researcher": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-market-researcher",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_market_researcher.txt",
+        "description": "Market sizing and competitor analysis.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_customer_researcher": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-customer-researcher",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_customer_researcher.txt",
+        "description": "Target audience definition and customer personas.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_brand_strategist": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-brand-strategist",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_brand_strategist.txt",
+        "description": "Brand identity, mission, vision, and positioning.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_financial_advisor": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-financial-advisor",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_financial_advisor.txt",
+        "description": "Financial projection and funding strategy recommendation.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_marketing_director": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-marketing-director",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_marketing_director.txt",
+        "description": "Pricing strategy and go-to-market marketing plan.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_operations_manager": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-operations-manager",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_operations_manager.txt",
+        "description": "Manufacturing/fulfillment plan and operational risk assessment.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_sales_strategist": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-sales-strategist",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_sales_strategist.txt",
+        "description": "Sales channel strategy and conversion approach.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_growth_strategist": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-growth-strategist",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_growth_strategist.txt",
+        "description": "Growth roadmap and 90-day execution plan.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
+  },
+  "founder_legal_advisor": {
+    "current_version": 1,
+    "owner": "platform",
+    "compatible_agent": "founder-legal-advisor",
+    "versions": [
+      {
+        "version": 1,
+        "file": "founder_legal_advisor.txt",
+        "description": "Legal/compliance risk pass and final launch strategy.",
+        "variables": ["goal", "context"],
+        "created_at": "2026-07-25"
+      }
+    ]
   }
 }

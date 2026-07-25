@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     # Tool sandbox hardening (Phase 1.5 §7).
     filesystem_max_bytes: int = 1_000_000
 
+    # Phase 2 auth: this process authenticates its own service-to-service calls
+    # (e.g. bootstrapping its legacy default Workspace at startup) with a shared
+    # key rather than a user JWT, since it has no user session. Local-dev-only
+    # default, same treatment as the API's Jwt:Secret — must be overridden
+    # together with the API's Internal:ServiceKey in any real deployment.
+    internal_service_key: str = "local-dev-only-secret-change-me-before-any-real-deployment-32chars"
+
     log_level: str = "INFO"
 
 
