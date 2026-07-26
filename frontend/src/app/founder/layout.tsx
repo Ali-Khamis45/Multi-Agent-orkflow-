@@ -1,5 +1,5 @@
-import { FounderAppShell } from "@/components/layout/founder-app-shell";
+import { OnboardingGate } from "@/components/founder/onboarding-gate";
 
 export default function FounderLayout({ children }: { children: React.ReactNode }) {
-  return <FounderAppShell>{children}</FounderAppShell>;
+  return <OnboardingGate>{children}</OnboardingGate>;
 }

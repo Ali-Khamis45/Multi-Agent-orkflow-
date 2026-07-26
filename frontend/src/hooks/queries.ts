@@ -1,7 +1,58 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { api, type CompanyProfileData, type CompanyProfileSection } from "@/lib/api-client";
+
+// ---- Company Profile (Phase 3) ----
+export const useCompanyProfile = (workspaceId: string | undefined) =>
+  useQuery({
+    queryKey: ["company-profile", workspaceId],
+    queryFn: () => api.companyProfile.get(workspaceId!),
+    enabled: !!workspaceId,
+  });
+
+export const usePatchCompanyProfileSection = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workspaceId, section, patch }: { workspaceId: string; section: CompanyProfileSection; patch: Record<string, unknown> }) =>
+      api.companyProfile.patchSection(workspaceId, section, patch),
+    onSuccess: (_, { workspaceId }) => {
+      qc.invalidateQueries({ queryKey: ["company-profile", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["business-health", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["recommendations", workspaceId] });
+    },
+  });
+};
+
+export const useCompleteOnboarding = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workspaceId, profile }: { workspaceId: string; profile: Partial<CompanyProfileData> }) =>
+      api.companyProfile.completeOnboarding(workspaceId, profile),
+    onSuccess: (_, { workspaceId }) => qc.invalidateQueries({ queryKey: ["company-profile", workspaceId] }),
+  });
+};
+
+export const useBusinessHealth = (workspaceId: string | undefined) =>
+  useQuery({
+    queryKey: ["business-health", workspaceId],
+    queryFn: () => api.companyProfile.health(workspaceId!),
+    enabled: !!workspaceId,
+  });
+
+export const useBusinessTimeline = (workspaceId: string | undefined) =>
+  useQuery({
+    queryKey: ["business-timeline", workspaceId],
+    queryFn: () => api.companyProfile.timeline(workspaceId!),
+    enabled: !!workspaceId,
+  });
+
+export const useRecommendations = (workspaceId: string | undefined) =>
+  useQuery({
+    queryKey: ["recommendations", workspaceId],
+    queryFn: () => api.companyProfile.recommendations(workspaceId!),
+    enabled: !!workspaceId,
+  });
 
 // ---- Workspaces ----
 export const useWorkspaces = () => useQuery({ queryKey: ["workspaces"], queryFn: api.workspaces.list });

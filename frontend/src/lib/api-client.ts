@@ -79,6 +79,81 @@ export interface CurrentUser {
   companyType: string;
 }
 
+// ---- Company Profile (Phase 3 "AI Company Operating System") ----
+// Mirrors api/Domain/Founders/CompanyProfileJson.cs's canonical shape exactly.
+export interface CompanyProfileData {
+  basicInfo: {
+    companyName: string | null; industry: string | null; businessType: string | null;
+    country: string | null; city: string | null; launchStage: string | null;
+    businessDescription: string | null; notes: string | null;
+  };
+  brand: {
+    mission: string | null; vision: string | null; coreValues: string[];
+    brandPersonality: string | null; brandVoice: string | null; brandColors: string[];
+    logoUrl: string | null; slogan: string | null; notes: string | null;
+  };
+  products: {
+    catalog: { name: string; description?: string | null; price?: number | null }[];
+    categories: string[]; manufacturingStrategy: string | null; pricingStrategy: string | null; notes: string | null;
+  };
+  customers: {
+    targetAudience: string | null; personas: { name: string; description?: string | null }[];
+    problems: string[]; goals: string[]; notes: string | null;
+  };
+  business: {
+    revenueModel: string | null; budget: number | null; fundingStatus: string | null;
+    monthlyRevenueGoal: number | null; growthGoal: string | null; launchDate: string | null; notes: string | null;
+  };
+  competition: {
+    competitors: { name: string; strengths?: string | null; weaknesses?: string | null }[];
+    advantages: string[]; weaknesses: string[]; opportunities: string[]; notes: string | null;
+  };
+  marketing: {
+    channels: string[]; contentStyle: string | null; socialPlatforms: string[];
+    campaignHistory: { name: string; date?: string | null; result?: string | null }[]; notes: string | null;
+  };
+  operations: {
+    suppliers: string[]; inventoryStrategy: string | null; shipping: string | null;
+    teamMembers: { name: string; role?: string | null }[]; notes: string | null;
+  };
+}
+
+export type CompanyProfileSection = keyof CompanyProfileData;
+
+export interface CompanyProfile {
+  id: string;
+  workspaceId: string;
+  isOnboarded: boolean;
+  profileJson: string;
+  updatedAt: string;
+}
+
+export interface CategoryHealth {
+  category: string;
+  score: number;
+  present: string[];
+  missing: string[];
+  explanation: string;
+}
+
+export interface BusinessHealth {
+  overallScore: number;
+  categories: CategoryHealth[];
+}
+
+export interface Recommendation {
+  category: string;
+  text: string;
+  categoryScore: number;
+}
+
+export interface TimelineMilestone {
+  title: string;
+  artifactName: string;
+  at: string;
+  ownerAgent: string;
+}
+
 export const api = {
   // ---- Auth ----
   auth: {
@@ -93,6 +168,25 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
     me: () => request<CurrentUser>("/api/auth/me"),
+  },
+
+  // ---- Company Profile (Phase 3) ----
+  companyProfile: {
+    get: (workspaceId: string) => request<CompanyProfile>(`/api/company-profile${qs({ workspaceId })}`),
+    patchSection: (workspaceId: string, section: CompanyProfileSection, patch: Record<string, unknown>) =>
+      request<CompanyProfile>("/api/company-profile/section", {
+        method: "PATCH",
+        body: JSON.stringify({ workspaceId, section, patch }),
+      }),
+    completeOnboarding: (workspaceId: string, profile: Partial<CompanyProfileData>) =>
+      request<CompanyProfile>("/api/company-profile/onboarding/complete", {
+        method: "POST",
+        body: JSON.stringify({ workspaceId, profile }),
+      }),
+    health: (workspaceId: string) => request<BusinessHealth>(`/api/company-profile/health${qs({ workspaceId })}`),
+    timeline: (workspaceId: string) => request<TimelineMilestone[]>(`/api/company-profile/timeline${qs({ workspaceId })}`),
+    recommendations: (workspaceId: string, limit = 5) =>
+      request<Recommendation[]>(`/api/company-profile/recommendations${qs({ workspaceId, limit })}`),
   },
 
   // ---- Workspaces ----
