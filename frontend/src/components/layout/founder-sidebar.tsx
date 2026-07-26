@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Rocket,
   FolderOpen,
+  Plug,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ export const FOUNDER_NAV_ITEMS = [
   { href: "/founder/growth", label: "Growth", icon: TrendingUp },
   { href: "/founder/launch-roadmap", label: "Launch Roadmap", icon: Rocket },
   { href: "/founder/documents", label: "Documents", icon: FolderOpen },
+  { href: "/founder/connectors", label: "Connectors", icon: Plug },
   { href: "/founder/settings", label: "Settings", icon: Settings },
 ];
 

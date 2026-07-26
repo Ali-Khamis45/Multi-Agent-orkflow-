@@ -154,6 +154,36 @@ export interface TimelineMilestone {
   ownerAgent: string;
 }
 
+// ---- Connectors (Phase 4 "Connector Framework") ----
+export interface ConnectorActionDefinition {
+  key: string;
+  displayName: string;
+  description: string;
+}
+
+export interface ConnectorCatalogEntry {
+  key: string;
+  displayName: string;
+  description: string;
+  authType: "OAuth2" | "ApiKey";
+  oAuthAvailable: boolean;
+  requiredCredentialFields: string[];
+  actions: ConnectorActionDefinition[];
+  events: string[];
+}
+
+export interface InstalledConnector {
+  connectorKey: string;
+  displayName: string;
+  status: "Connected" | "Disconnected" | "Error";
+  lastHealthCheckAt: string | null;
+  lastHealthOk: boolean | null;
+  lastHealthMessage: string | null;
+  lastSyncedAt: string | null;
+  lastSyncOk: boolean | null;
+  lastSyncMessage: string | null;
+}
+
 export const api = {
   // ---- Auth ----
   auth: {
@@ -168,6 +198,31 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
     me: () => request<CurrentUser>("/api/auth/me"),
+  },
+
+  // ---- Connectors (Phase 4) ----
+  connectors: {
+    catalog: () => request<ConnectorCatalogEntry[]>("/api/connectors/catalog"),
+    installed: (workspaceId: string) => request<InstalledConnector[]>(`/api/connectors/installed${qs({ workspaceId })}`),
+    install: (key: string, workspaceId: string, credentials: Record<string, string>) =>
+      request<void>(`/api/connectors/${key}/install`, {
+        method: "POST",
+        body: JSON.stringify({ workspaceId, credentials }),
+      }),
+    disconnect: (key: string, workspaceId: string) =>
+      request<void>(`/api/connectors/${key}/disconnect`, { method: "POST", body: JSON.stringify({ workspaceId }) }),
+    authorizeUrl: (key: string, workspaceId: string) =>
+      request<{ url: string }>(`/api/connectors/${key}/oauth/authorize-url${qs({ workspaceId })}`),
+    health: (key: string, workspaceId: string) =>
+      request<{ healthy: boolean; message: string }>(`/api/connectors/${key}/health`, {
+        method: "POST",
+        body: JSON.stringify({ workspaceId }),
+      }),
+    sync: (key: string, workspaceId: string) =>
+      request<{ success: boolean; summary: string }>(`/api/connectors/${key}/sync`, {
+        method: "POST",
+        body: JSON.stringify({ workspaceId }),
+      }),
   },
 
   // ---- Company Profile (Phase 3) ----

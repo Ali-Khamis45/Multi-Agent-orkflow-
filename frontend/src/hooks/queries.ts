@@ -3,6 +3,57 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type CompanyProfileData, type CompanyProfileSection } from "@/lib/api-client";
 
+// ---- Connectors (Phase 4) ----
+export const useConnectorCatalog = () => useQuery({ queryKey: ["connector-catalog"], queryFn: api.connectors.catalog });
+
+export const useInstalledConnectors = (workspaceId: string | undefined) =>
+  useQuery({
+    queryKey: ["installed-connectors", workspaceId],
+    queryFn: () => api.connectors.installed(workspaceId!),
+    enabled: !!workspaceId,
+    refetchInterval: 15_000,
+  });
+
+export const useInstallConnector = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, workspaceId, credentials }: { key: string; workspaceId: string; credentials: Record<string, string> }) =>
+      api.connectors.install(key, workspaceId, credentials),
+    onSuccess: (_, { workspaceId }) => qc.invalidateQueries({ queryKey: ["installed-connectors", workspaceId] }),
+  });
+};
+
+export const useDisconnectConnector = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, workspaceId }: { key: string; workspaceId: string }) => api.connectors.disconnect(key, workspaceId),
+    onSuccess: (_, { workspaceId }) => qc.invalidateQueries({ queryKey: ["installed-connectors", workspaceId] }),
+  });
+};
+
+export const useConnectorHealth = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, workspaceId }: { key: string; workspaceId: string }) => api.connectors.health(key, workspaceId),
+    onSuccess: (_, { workspaceId }) => qc.invalidateQueries({ queryKey: ["installed-connectors", workspaceId] }),
+  });
+};
+
+export const useConnectorSync = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, workspaceId }: { key: string; workspaceId: string }) => api.connectors.sync(key, workspaceId),
+    onSuccess: (_, { workspaceId }) => {
+      qc.invalidateQueries({ queryKey: ["installed-connectors", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["company-profile", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["business-health", workspaceId] });
+    },
+  });
+};
+
+export const useConnectorAuthorizeUrl = () =>
+  useMutation({ mutationFn: ({ key, workspaceId }: { key: string; workspaceId: string }) => api.connectors.authorizeUrl(key, workspaceId) });
+
 // ---- Company Profile (Phase 3) ----
 export const useCompanyProfile = (workspaceId: string | undefined) =>
   useQuery({

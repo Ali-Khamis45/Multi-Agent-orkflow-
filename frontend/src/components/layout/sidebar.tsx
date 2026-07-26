@@ -13,6 +13,7 @@ import {
   Settings,
   Radar,
   HeartPulse,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ export const NAV_ITEMS = [
   { href: "/telemetry", label: "Telemetry", icon: Activity },
   { href: "/supervisor", label: "Supervisor", icon: Radar },
   { href: "/prompts", label: "Prompt Registry", icon: ScrollText },
+  { href: "/connectors", label: "Connectors", icon: Plug },
   { href: "/health", label: "Project Health", icon: HeartPulse },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
