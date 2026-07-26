@@ -1,6 +1,7 @@
 using AiAgentsTeam.Domain.Agents;
 using AiAgentsTeam.Domain.Artifacts;
 using AiAgentsTeam.Domain.Checkpoints;
+using AiAgentsTeam.Domain.Connectors;
 using AiAgentsTeam.Domain.Failures;
 using AiAgentsTeam.Domain.Founders;
 using AiAgentsTeam.Domain.Intent;
@@ -37,6 +38,8 @@ public interface IApplicationDbContext
     DbSet<ClarificationAnswer> ClarificationAnswers { get; }
     DbSet<ExecutionFailure> ExecutionFailures { get; }
     DbSet<CompanyProfile> CompanyProfiles { get; }
+    DbSet<ConnectorInstallation> ConnectorInstallations { get; }
+    DbSet<ConnectorActionLog> ConnectorActionLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

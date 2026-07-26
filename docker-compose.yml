@@ -45,8 +45,16 @@ services:
       Jwt__Secret: "local-dev-only-secret-change-me-before-any-real-deployment-32chars"
       # Shared with ai-runtime's INTERNAL_SERVICE_KEY below — service-to-service auth.
       Internal__ServiceKey: "local-dev-only-secret-change-me-before-any-real-deployment-32chars"
+      # Phase 4: OAuth apps aren't registered with any real provider in this dev
+      # environment (see Connectors section of appsettings.json) — every ClientId/
+      # ClientSecret stays empty until a real app is created with each provider.
+      Connectors__RedirectBaseUrl: "http://localhost:5080"
+      Connectors__FrontendBaseUrl: "http://localhost:3000"
+      DataProtection__KeysPath: "/data/dataprotection-keys"
     ports:
       - "5080:8080"
+    volumes:
+      - dataprotection-keys:/data/dataprotection-keys
 
   ai-runtime:
     build:
@@ -78,3 +86,4 @@ services:
 volumes:
   postgres-data:
   workspace-files:
+  dataprotection-keys:

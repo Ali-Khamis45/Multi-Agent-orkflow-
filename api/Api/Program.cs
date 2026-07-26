@@ -10,6 +10,7 @@ using AiAgentsTeam.Infrastructure;
 using AiAgentsTeam.Infrastructure.Auth;
 using AiAgentsTeam.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -23,6 +24,19 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
+
+// Phase 4 Connector Framework encrypts every stored credential (OAuth token, API key)
+// via Data Protection — without an explicit persistent key ring, ASP.NET Core generates
+// one in-memory/ephemeral per process, so credentials encrypted before a restart become
+// permanently undecryptable after one (confirmed live: a container recreate mid-session
+// broke every previously-installed connector with a CryptographicException). The
+// DataProtection-Keys volume in docker-compose.yml is what this path needs to survive
+// restarts; a single, unnamed key ring for the whole app (not per-connector) is correct
+// since Data Protection's protector *purpose string* ("AiAgentsTeam.ConnectorCredentials.v1",
+// see CredentialProtector) already provides per-purpose key separation.
+builder.Services.AddDataProtection()
+    .SetApplicationName("AiAgentsTeam")
+    .PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["DataProtection:KeysPath"] ?? "/tmp/dataprotection-keys"));
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
