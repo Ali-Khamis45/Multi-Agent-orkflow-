@@ -97,6 +97,35 @@ curl "http://localhost:5080/api/company-profile?workspaceId=<id>" -H "Authorizat
 # → {"id":"...","workspaceId":"...","isOnboarded":true,"profileJson":"{\"basicInfo\":{...},...}","updatedAt":"..."}
 ```
 
+## Connectors — `api/connectors` (Phase 4)
+
+Reaches real external systems (Shopify, GitHub, Stripe, ...) — see
+[Architecture Overview](architecture/OVERVIEW.md#phase-4--connector-framework-real-business-systems).
+`installed`/`health`/`sync`/`actions` are dual-auth (JWT or `X-Internal-Service-Key`, same as
+`api/company-profile`) since the AI Runtime's `connector_action` tool calls them with no user
+session. `oauth/callback` has no auth at all — it's a browser redirect landing straight from the
+third-party provider; its security is the signed `state` param, not a bearer token.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `GET` | `/api/connectors/catalog` | — | `{ key, displayName, description, authType, oAuthAvailable, requiredCredentialFields, actions, events }[]` — scoped to the caller's own CompanyType |
+| `GET` | `/api/connectors/installed?workspaceId=` | — | `{ connectorKey, displayName, status, lastHealthCheckAt, lastHealthOk, lastHealthMessage, lastSyncedAt, lastSyncOk, lastSyncMessage }[]` |
+| `POST` | `/api/connectors/{key}/install` | `{ workspaceId, credentials: { [field]: string } }` | `204` — `credentials` keys must match that connector's `requiredCredentialFields` for API-key connectors; for OAuth2 connectors this is also how `CompleteConnectorOAuthCommand` persists an exchanged token |
+| `POST` | `/api/connectors/{key}/disconnect` | `{ workspaceId }` | `204` |
+| `GET` | `/api/connectors/{key}/oauth/authorize-url?workspaceId=` | — | `{ url }` — the real provider authorize URL, `state` HMAC-signed to this workspace+connector |
+| `GET` | `/api/connectors/{key}/oauth/callback?code=&state=` | — | `302` redirect back to the frontend marketplace page |
+| `POST` | `/api/connectors/{key}/health` | `{ workspaceId }` | `{ healthy, message }` |
+| `POST` | `/api/connectors/{key}/sync` | `{ workspaceId }` | `{ success, summary }` — on success, also applies the result to CompanyProfile (Founder) or Memory (Software) |
+| `POST` | `/api/connectors/{key}/actions/{actionKey}` | `{ workspaceId, inputJson }` | `{ success, outputJson, errorMessage }` — every call, success or failure, is logged to `connector_action_logs` |
+
+```bash
+curl -X POST http://localhost:5080/api/connectors/shopify/install \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"workspaceId":"<id>","credentials":{"storeUrl":"your-store.myshopify.com","accessToken":"shpat_..."}}'
+curl -X POST http://localhost:5080/api/connectors/shopify/sync \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"workspaceId":"<id>"}'
+```
+
 ## Workspaces — `api/workspaces`
 
 | Method | Path | Body | Returns |

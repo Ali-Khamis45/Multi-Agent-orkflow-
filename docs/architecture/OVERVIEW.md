@@ -231,6 +231,77 @@ flowchart LR
 strategy evolved over time (only *that* it changed, via the Business Timeline's artifact
 milestones).
 
+## Phase 4 — Connector Framework (real business systems)
+
+Phase 3 gave the platform memory. Phase 4 gives it hands: "the AI should not only generate
+recommendations, it should perform real actions." A generic, pluggable Connector Framework lets
+either Workspace reach real external systems — Shopify, Stripe, Meta, GitHub, Slack, and 14 more —
+without any connector-specific logic living in the core (domain entities, CQRS handlers, API
+controller). Every connector is one class implementing `IConnectorDefinition`
+(`Application/Connectors/Abstractions/`) and one line of DI registration; adding connector #19
+never touches core code.
+
+```mermaid
+flowchart LR
+    Catalog["GET /api/connectors/catalog<br/>(CompanyType-scoped)"] --> Install["Install<br/>(API key form, or OAuth2 redirect)"]
+    Install --> CI[("ConnectorInstallation<br/>credentials encrypted via Data Protection")]
+    CI --> Health["Health check"]
+    CI --> Sync["Sync"]
+    CI --> Action["Execute action<br/>(agent tool call)"]
+    Sync -->|"Founder result"| CP[("CompanyProfile, Phase 3")]
+    Sync -->|"Software result"| Mem[("Memory, Phase 1")]
+    Action --> Log[("ConnectorActionLog<br/>audit trail")]
+```
+
+- **18 connectors**, split evenly Founder (Shopify, WooCommerce, Stripe, Meta, Google Analytics,
+  Google Ads, Gmail, Google Drive, Notion) / Software (GitHub, GitLab, Jira, Linear, Slack,
+  Discord, Docker Hub, Vercel, Azure DevOps) — each a real HTTP client against that vendor's
+  documented API for health/sync/1-3 signature actions.
+- **Credentials are encrypted at rest** via ASP.NET Core Data Protection
+  (`Infrastructure/Connectors/Common/CredentialProtector.cs`), with a persisted key ring (the
+  `dataprotection-keys` Docker volume) — without it, a container restart permanently breaks every
+  installed connector, which is exactly what happened in live testing before the volume was added.
+- **OAuth2's authorization-code flow is implemented once, generically**
+  (`IOAuth2TokenExchanger`, `IConnectorOAuthStateSigner`) — every OAuth2 connector supplies only
+  its authorize/token URLs and scopes; the `state` param is HMAC-signed and self-verifying rather
+  than requiring server-side session state, since it's the one thing round-tripped through the
+  third-party provider.
+- **Real-call-first, mock-only-on-transport-failure**: every connector tries the real HTTP call;
+  if the vendor responds at all — even with a real 401 for a bad token — that honest failure
+  surfaces to the user, never a masked mock success. Only a transport-level failure (DNS,
+  unreachable) degrades to a clearly-labeled `[MOCK]` result, the same principle the Multi-Model
+  Router already applies to LLM calls. Confirmed live both ways: a placeholder Shopify token
+  against the real `myshopify.com` domain returns Shopify's own "Invalid API key" error; the same
+  install against an unresolvable domain mock-falls-back.
+- **Memory Synchronization**: `SyncConnectorCommand` applies whatever a connector's sync found to
+  CompanyProfile (Founder, via Phase 3's own `PatchCompanyProfileSectionCommand`) or Memory
+  (Software) — branching only on which result fields are populated, never on which connector
+  produced them, so the core sync path stays connector-agnostic.
+- **Agents perform real actions** via a new `connector_action` tool
+  (`ai-runtime/app/tools/connector_action_tool.py`), best-effort (a disconnected connector is an
+  ordinary state, not a task failure). Wired into `founder-marketing-director` (Meta's
+  `CreateInstagramDraft` — the spec's own headline example) and `code-reviewer` (GitHub's
+  `CommitFile`) — no new agents, per this milestone's own "feature-complete, no more placeholder
+  agents" framing.
+- **Connector Marketplace** (`components/connectors/connector-marketplace.tsx`) is one shared
+  component reused by both Workspaces (`/connectors`, `/founder/connectors`) — browse the
+  CompanyType-scoped catalog, install (API-key dialog or OAuth redirect), check health, sync now,
+  disconnect.
+
+**Known gaps, tracked rather than hidden:**
+- No live credentials for any of the 18 vendors exist in this environment — every connector's HTTP
+  logic is written against each vendor's documented API but has only been exercised with
+  placeholder/invalid credentials against the real endpoints (confirmed the request reaches the
+  vendor and gets a real auth-rejection response), never a fully successful call. OAuth2 connectors
+  additionally have no registered app with any provider, so only the direct-credential install path
+  (bypassing the browser redirect) has been exercised.
+- No inbound webhook ingestion — `Events` on each connector are advertised catalog metadata only;
+  a real integration would also want e.g. GitHub's `IssueOpened` webhook to trigger a workflow, not
+  just outbound sync/actions.
+- Install/health/sync/action endpoints don't verify a connector's `CompanyType` matches the
+  installing workspace's — only the catalog *browse* list is scoped, so a crafted API call could
+  install a Software connector on a Founder workspace (harmless today, but not defended in depth).
+
 ## Where to go next
 
 - [Execution Flow](EXECUTION_FLOW.md) — what happens from "submit a goal" to "workflow complete," with the DAG diagram.

@@ -15,6 +15,13 @@ recommendations, and a milestone timeline all derive from it. Both Workspaces ru
 platform, coordinated through a dynamically generated DAG, with every decision, reasoning stage, and
 artifact observable live in each Workspace's own dashboard.
 
+Agents don't just advise — a pluggable **Connector Framework** lets either Workspace reach real
+external systems: 18 connectors (Shopify, Stripe, Meta, Google, Notion for Founders; GitHub, GitLab,
+Slack, Vercel, Jira and more for Software), installable from an in-app Marketplace, each a real HTTP
+client against that vendor's own API. Sync results feed straight back into Company Profile / Memory,
+and agents can perform real actions (save an Instagram draft, commit a code review report) through
+the same tool-calling path they already use for everything else.
+
 <p align="center">
   <img src="docs/screenshots/03-execution-graph.png" alt="Mission Control — live execution graph" width="850">
 </p>
