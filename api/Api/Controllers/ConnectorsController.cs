@@ -40,10 +40,16 @@ public sealed class ConnectorsController(ISender sender, IOptions<InternalServic
     public async Task<ActionResult<IReadOnlyList<ConnectorCatalogEntryDto>>> GetCatalog(CancellationToken ct) =>
         Ok(await sender.Send(new GetConnectorCatalogQuery(CurrentCompanyType), ct));
 
-    [Authorize]
+    /// <summary>Dual-auth, not [Authorize]-only: the connector_action tool
+    /// (ai-runtime/app/tools/connector_action_tool.py) checks installation status
+    /// before an agent attempts an action, with no user session — the same reason
+    /// health/sync/execute-action below are dual-auth.</summary>
     [HttpGet("installed")]
-    public async Task<ActionResult<IReadOnlyList<InstalledConnectorDto>>> GetInstalled([FromQuery] Guid workspaceId, CancellationToken ct) =>
-        Ok(await sender.Send(new GetInstalledConnectorsQuery(workspaceId), ct));
+    public async Task<ActionResult<IReadOnlyList<InstalledConnectorDto>>> GetInstalled([FromQuery] Guid workspaceId, CancellationToken ct)
+    {
+        if (!IsServiceOrAuthenticated) return Unauthorized();
+        return Ok(await sender.Send(new GetInstalledConnectorsQuery(workspaceId), ct));
+    }
 
     [Authorize]
     [HttpPost("{key}/install")]

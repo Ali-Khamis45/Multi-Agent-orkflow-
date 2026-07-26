@@ -46,6 +46,7 @@ from app.orchestration.supervisor_consumer import SupervisorEventConsumer
 from app.routing.model_router import ModelRouter
 from app.supervisor.supervisor_agent import SupervisorAgent
 from app.tools.artifact_store_tool import ArtifactStoreTool
+from app.tools.connector_action_tool import ConnectorActionTool
 from app.tools.filesystem_tool import FilesystemTool
 from app.tools.prompt_loader_tool import PromptLoaderTool
 from app.tools.prompt_registry import PromptRegistry
@@ -93,6 +94,7 @@ class Runtime:
         self.tools.register(FilesystemTool(root=Path(settings.workspace_files_root), max_bytes=settings.filesystem_max_bytes))
         self.tools.register(PromptLoaderTool(registry=self.prompt_registry))
         self.tools.register(ArtifactStoreTool(self.api))
+        self.tools.register(ConnectorActionTool(self.api))
 
         self.default_workspace_id: uuid.UUID | None = None
         self.memory: MemoryClient | None = None

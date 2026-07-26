@@ -266,6 +266,27 @@ class ApiClient:
         )
         r.raise_for_status()
 
+    # ---- Connector Framework (Phase 4 "AI Company Operating System") ----
+    async def get_installed_connectors(self, workspace_id: uuid.UUID) -> list[dict[str, Any]]:
+        headers = {"X-Internal-Service-Key": self._internal_service_key} if self._internal_service_key else {}
+        r = await self._http.get(
+            "/api/connectors/installed", params={"workspaceId": str(workspace_id)}, headers=headers
+        )
+        r.raise_for_status()
+        return r.json()
+
+    async def execute_connector_action(
+        self, workspace_id: uuid.UUID, connector_key: str, action_key: str, input_json: str
+    ) -> dict[str, Any]:
+        headers = {"X-Internal-Service-Key": self._internal_service_key} if self._internal_service_key else {}
+        r = await self._http.post(
+            f"/api/connectors/{connector_key}/actions/{action_key}",
+            json={"workspaceId": str(workspace_id), "inputJson": input_json},
+            headers=headers,
+        )
+        r.raise_for_status()
+        return r.json()
+
     # ---- Reasoning Engine traces / unified telemetry (§E6, Phase 1.5 §1) ----
     async def record_reasoning_trace(
         self,

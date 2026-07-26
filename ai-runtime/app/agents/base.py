@@ -256,6 +256,31 @@ class AgentBase(ABC):
                 "failed to update company profile", extra={"fields": {"agent": self.name, "section": section}}
             )
 
+    async def try_connector_action(
+        self, ctx: AgentContext, connector_key: str, action_key: str, input_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Best-effort real-world action through the Connector Framework (Phase 4) —
+        "best-effort" because most workspaces won't have every connector installed,
+        and a disconnected connector is an ordinary state, not a task failure. Returns
+        the connector's raw output on success, None otherwise (never raises)."""
+        result = await self.tools.invoke(
+            "connector_action",
+            self.permissions,
+            {
+                "workspaceId": str(ctx.workspace_id),
+                "connectorKey": connector_key,
+                "actionKey": action_key,
+                "inputJson": json.dumps(input_data),
+            },
+        )
+        ctx.record_tool_call()
+        if not result.success:
+            self.logger.info(
+                "connector action skipped", extra={"fields": {"connector": connector_key, "action": action_key, "reason": result.error}}
+            )
+            return None
+        return result.output
+
     async def retry(self, fn: Callable[[], Awaitable[T]], attempts: int = 2, delay_seconds: float = 1.0) -> T:
         """Generic retry helper for sub-operations within Execute (e.g. a flaky
         tool call) — distinct from the .NET Scheduler's task-level retry (§10),

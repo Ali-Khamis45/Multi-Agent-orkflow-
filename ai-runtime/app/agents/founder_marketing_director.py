@@ -11,8 +11,8 @@ class FounderMarketingDirectorAgent(AgentBase):
     priority = 70
     required_context = ["BrandIdentity"]
     produced_artifacts = ["MarketingPlan"]
-    tools_available = ["prompt_loader", "artifact_store"]
-    permissions = ["prompt_loader", "artifact_store"]
+    tools_available = ["prompt_loader", "artifact_store", "connector_action"]
+    permissions = ["prompt_loader", "artifact_store", "connector_action"]
 
     async def execute_domain_logic(self, ctx: AgentContext) -> DomainResult:
         content = await self.generate(
@@ -27,4 +27,17 @@ class FounderMarketingDirectorAgent(AgentBase):
                 "notes": "2-3 sentence go-to-market summary",
             },
         )
+
+        # Phase 4 "Connector Framework": "Create an Instagram campaign -> Generate
+        # content -> Save draft through Meta API." Best-effort — most workspaces
+        # won't have Meta connected, and that's an ordinary state, not a failure.
+        await self.try_connector_action(
+            ctx, "meta", "CreateInstagramDraft",
+            {
+                "igUserId": ctx.inputs.get("igUserId", "primary"),
+                "caption": content[:280],
+                "imageUrl": ctx.inputs.get("imageUrl", "https://placehold.co/1080x1080.png"),
+            },
+        )
+
         return await self.produce_artifact(ctx, name="MarketingPlan", artifact_type="Markdown", content=content)
