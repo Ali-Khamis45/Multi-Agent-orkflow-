@@ -4,6 +4,7 @@ using AiAgentsTeam.Domain.Agents;
 using AiAgentsTeam.Domain.Artifacts;
 using AiAgentsTeam.Domain.Checkpoints;
 using AiAgentsTeam.Domain.Failures;
+using AiAgentsTeam.Domain.Founders;
 using AiAgentsTeam.Domain.Intent;
 using AiAgentsTeam.Domain.Memory;
 using AiAgentsTeam.Domain.Reasoning;
@@ -33,10 +34,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<IntentSession> IntentSessions => Set<IntentSession>();
     public DbSet<ClarificationAnswer> ClarificationAnswers => Set<ClarificationAnswer>();
     public DbSet<ExecutionFailure> ExecutionFailures => Set<ExecutionFailure>();
+    public DbSet<CompanyProfile> CompanyProfiles => Set<CompanyProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         base.OnModelCreating(modelBuilder);
     }
+
+    public void Detach(object entity) => Entry(entity).State = EntityState.Detached;
 }

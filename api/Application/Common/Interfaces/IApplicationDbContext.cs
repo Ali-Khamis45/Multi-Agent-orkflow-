@@ -2,6 +2,7 @@ using AiAgentsTeam.Domain.Agents;
 using AiAgentsTeam.Domain.Artifacts;
 using AiAgentsTeam.Domain.Checkpoints;
 using AiAgentsTeam.Domain.Failures;
+using AiAgentsTeam.Domain.Founders;
 using AiAgentsTeam.Domain.Intent;
 using AiAgentsTeam.Domain.Memory;
 using AiAgentsTeam.Domain.Reasoning;
@@ -35,6 +36,13 @@ public interface IApplicationDbContext
     DbSet<IntentSession> IntentSessions { get; }
     DbSet<ClarificationAnswer> ClarificationAnswers { get; }
     DbSet<ExecutionFailure> ExecutionFailures { get; }
+    DbSet<CompanyProfile> CompanyProfiles { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Evicts a stale tracked entity from the change tracker after a
+    /// DbUpdateConcurrencyException so a subsequent query for the same key actually
+    /// re-hits the database instead of returning the identity map's stale instance —
+    /// see PatchCompanyProfileSectionCommand's retry loop.</summary>
+    void Detach(object entity);
 }
