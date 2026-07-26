@@ -26,6 +26,7 @@ from app.clients.api_client import ApiClient
 from app.intent.intent_engine import IntentEngine
 from app.logging_config import get_logger
 from app.models.event_envelope import EventEnvelope, EventTypes
+from app.supervisor.founder_router import route_single_agent
 
 logger = get_logger(__name__)
 
@@ -40,6 +41,11 @@ class _RunState:
     artifacts: dict[str, str] = field(default_factory=dict)  # friendly name -> artifactId
     expanded: bool = False
     finalized: bool = False
+    # Phase 3 "Dynamic Work" (Founder only): set when this run was routed to a single
+    # specialist instead of the full venture-framing DAG — see SupervisorAgent.kickoff
+    # and app/supervisor/founder_router.py. None for every Software run and every
+    # Founder "new venture" run.
+    single_node_name: str | None = None
 
 
 class SupervisorAgent:
@@ -65,14 +71,35 @@ class SupervisorAgent:
         )
         state.artifacts["StructuredRequirements"] = str(structured_requirements_id)
 
+        single_node_name: str | None = None
+
         if company_type == "Founder":
-            first_name, first_task_type, rationale = (
-                "VentureFraming", "FrameVenture",
-                "Founder fixed pipeline: CEO frames the venture first; once it completes, expand the "
-                "DAG with Business Model Analysis -> {Market, Customer} Research (parallel) -> Brand "
-                "Strategy -> {Financial, Marketing, Operations, Sales} Planning (parallel) -> Growth "
-                "Planning -> Legal Review.",
-            )
+            # Phase 3 "Dynamic Work": once this workspace has an onboarded Company
+            # Profile, a focused request ("Create Instagram content", "Should I
+            # increase prices?") is routed to the one relevant specialist instead of
+            # re-running the whole 11-agent venture-framing pipeline. A brand-new
+            # workspace (not yet onboarded) or a request that doesn't clearly match
+            # one specialist still gets the full pipeline — see founder_router.py.
+            profile_dto = await self._api.get_company_profile(workspace_id)
+            route = route_single_agent(raw_input) if profile_dto.get("isOnboarded") else None
+
+            if route is not None:
+                first_name, first_task_type = route.node_name, route.task_type
+                single_node_name = route.node_name
+                rationale = (
+                    f"Dynamic Work: '{raw_input[:80]}' matched {route.node_name} ({route.task_type}) "
+                    "by keyword routing. This workspace already has an onboarded Company Profile, so "
+                    "this request is handled by a single specialist (with full Company Memory context) "
+                    "instead of re-running the full venture-framing pipeline."
+                )
+            else:
+                first_name, first_task_type, rationale = (
+                    "VentureFraming", "FrameVenture",
+                    "Founder fixed pipeline: CEO frames the venture first; once it completes, expand the "
+                    "DAG with Business Model Analysis -> {Market, Customer} Research (parallel) -> Brand "
+                    "Strategy -> {Financial, Marketing, Operations, Sales} Planning (parallel) -> Growth "
+                    "Planning -> Legal Review.",
+                )
         else:
             first_name, first_task_type, rationale = (
                 "BusinessAnalysis", "DiscoverRequirements",
@@ -88,6 +115,11 @@ class SupervisorAgent:
             inputs_json=json.dumps({"goal": raw_input, "upstreamArtifactNames": ["StructuredRequirements"]}),
         )
         state.node_ids[first_name] = first_id
+        if single_node_name is not None:
+            # Dynamic Work: this is the whole DAG — no expansion step will ever fire
+            # (on_event only expands on the *full* pipeline's first node names).
+            state.single_node_name = single_node_name
+            state.expanded = True
 
         await self._api.record_supervisor_decision(
             run_id,
@@ -114,7 +146,7 @@ class SupervisorAgent:
             await self._record_artifact(state, envelope)
 
             first_name = "VentureFraming" if state.company_type == "Founder" else "BusinessAnalysis"
-            last_name = "LegalReview" if state.company_type == "Founder" else "QAValidation"
+            last_name = state.single_node_name or ("LegalReview" if state.company_type == "Founder" else "QAValidation")
 
             if not state.expanded and envelope.task_id == state.node_ids.get(first_name):
                 if state.company_type == "Founder":

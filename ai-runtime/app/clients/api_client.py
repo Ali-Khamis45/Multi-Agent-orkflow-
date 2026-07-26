@@ -244,13 +244,16 @@ class ApiClient:
 
     # ---- Company Profile / Company Memory (Phase 3 "AI Company Operating System") ----
     async def get_company_profile(self, workspace_id: uuid.UUID) -> dict[str, Any]:
+        """Full CompanyProfileDto — `isOnboarded` plus the raw (still-JSON-string)
+        `profileJson`. Callers that only want the parsed profile shape (e.g. the
+        reasoning pipeline's Company Memory context) do `json.loads(result["profileJson"])`
+        themselves rather than this client silently deciding that for every caller."""
         headers = {"X-Internal-Service-Key": self._internal_service_key} if self._internal_service_key else {}
         r = await self._http.get(
             "/api/company-profile", params={"workspaceId": str(workspace_id)}, headers=headers
         )
         r.raise_for_status()
-        body = r.json()
-        return json.loads(body["profileJson"])
+        return r.json()
 
     async def patch_company_profile_section(
         self, workspace_id: uuid.UUID, section: str, patch: dict[str, Any]

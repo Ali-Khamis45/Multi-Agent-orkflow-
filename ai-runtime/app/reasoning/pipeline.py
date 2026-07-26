@@ -197,7 +197,8 @@ class ReasoningPipeline:
 
         if self._company_type == "Founder":
             try:
-                profile = await self._api.get_company_profile(ctx.workspace_id)
+                profile_dto = await self._api.get_company_profile(ctx.workspace_id)
+                profile = json.loads(profile_dto["profileJson"])
                 rendered = render_company_profile_context(profile)
                 if rendered:
                     parts.append(rendered)
