@@ -73,6 +73,30 @@ curl -X POST http://localhost:5080/api/auth/register \
 # → {"userId":"...","email":"a@b.com","name":"Ada","companyType":"Founder","token":"eyJ..."}
 ```
 
+## Company Profile — `api/company-profile` (Phase 3, Founder Workspace only)
+
+Company Memory's source of truth (see [Architecture Overview](architecture/OVERVIEW.md#phase-3--ai-company-operating-system-company-memory)).
+Dual-auth like `POST /api/workspaces`: a valid JWT (the frontend) or `X-Internal-Service-Key` (the
+AI Runtime's Founder agents, reading/writing with no user session).
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `GET` | `/api/company-profile?workspaceId=` | — | `{ id, workspaceId, isOnboarded, profileJson, updatedAt }` — get-or-create, `profileJson` is a JSON *string* to parse client-side |
+| `PATCH` | `/api/company-profile/section` | `{ workspaceId, section, patch }` | same shape — field-level merge-patch of one section; fields not in `patch` are untouched |
+| `POST` | `/api/company-profile/onboarding/complete` | `{ workspaceId, profile }` | same shape, `isOnboarded: true` — replaces the whole profile, merged onto the default shape |
+| `GET` | `/api/company-profile/health?workspaceId=` | — | `{ overallScore, categories: [{ category, score, present, missing, explanation }] }` |
+| `GET` | `/api/company-profile/timeline?workspaceId=` | — | `{ title, artifactName, at, ownerAgent }[]` — real artifact-creation milestones, oldest first |
+| `GET` | `/api/company-profile/recommendations?workspaceId=&limit=` | — | `{ category, text, categoryScore }[]` — restates the lowest-scoring Business Health gaps |
+
+`section` is one of `basicInfo | brand | products | customers | business | competition |
+marketing | operations` — see `CompanyProfileJson.DefaultProfileJson` in
+`api/Domain/Founders/CompanyProfileJson.cs` for the full field shape of each.
+
+```bash
+curl "http://localhost:5080/api/company-profile?workspaceId=<id>" -H "Authorization: Bearer $TOKEN"
+# → {"id":"...","workspaceId":"...","isOnboarded":true,"profileJson":"{\"basicInfo\":{...},...}","updatedAt":"..."}
+```
+
 ## Workspaces — `api/workspaces`
 
 | Method | Path | Body | Returns |

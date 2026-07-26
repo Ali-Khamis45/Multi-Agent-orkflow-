@@ -173,6 +173,64 @@ What this added, concretely:
 was deliberately named distinctly from every Software task type. A future hardening pass should add
 the same `CompanyType` scoping the Registry already has.
 
+## Phase 3 — AI Company Operating System (Company Memory)
+
+Phase 2 gave the Founder Workspace its own agents and pipeline. Phase 3 makes it actually
+*remember the business* — "the user should never need to explain the same company twice." Nothing
+about Phase 2's infrastructure changed; this phase is entirely new business logic layered on top:
+one new aggregate (`CompanyProfile`), one new context-injection point in the reasoning pipeline, and
+one new DAG-construction choice in the Supervisor.
+
+```mermaid
+flowchart LR
+    Onboard["Onboarding wizard<br/>(frontend, 9 questions)"] -->|"POST .../onboarding/complete"| CP[("CompanyProfile<br/>one JSONB blob per Workspace")]
+    Intake["POST /api/intake"] --> Router{"Founder + onboarded?"}
+    Router -->|no| FullDAG["Full 11-node venture DAG<br/>(Phase 2, unchanged)"]
+    Router -->|"yes, request matches\none specialist"| OneNode["1-node DAG<br/>Dynamic Work"]
+    Router -->|"yes, broad request"| FullDAG
+    FullDAG --> Agents["Founder agents"]
+    OneNode --> Agents
+    CP -->|"RetrieveContext stage\n(every Founder agent)"| Agents
+    Agents -->|"update_company_profile()\nafter every artifact"| CP
+```
+
+- **CompanyProfile** (`api/Domain/Founders/CompanyProfile.cs`) is a single JSONB blob per Workspace
+  — Basic Info, Brand, Products, Customers, Business, Competition, Marketing, Operations — rather
+  than ~8 owned-type tables. The shape is documented once
+  (`CompanyProfileJson.DefaultProfileJson`) and every consumer (TypeScript, Python agent dicts,
+  LLM-structured-output) already speaks JSON natively. Section-level field merge-patch, guarded by
+  Postgres's `xmin` as an optimistic-concurrency token with a retry loop, since the Founder DAG
+  genuinely runs parallel branches that race to patch the same row.
+- **Company Memory**: `ReasoningPipeline._retrieve_context` (Python) prepends the whole
+  CompanyProfile to every Founder agent's prompt context, ahead of upstream-artifact context — one
+  change, every current and future Founder agent gets it for free. See
+  [Reasoning Engine](REASONING_ENGINE.md).
+- **Smart Agents**: every Founder agent calls `AgentBase.update_company_profile()` after producing
+  its artifact — one extra model call asks the model to extract a small JSON patch; when that
+  doesn't parse as JSON (verified live: this is what actually happens with no LLM key configured),
+  it degrades to the section's `notes` field rather than corrupting a typed field or dropping the
+  finding silently.
+- **Dynamic Work**: once a workspace is onboarded, a focused request ("Create Instagram content")
+  is routed to one specialist via a deterministic keyword classifier
+  (`app/supervisor/founder_router.py`) instead of re-running the full venture DAG — implemented as
+  a different DAG-construction choice inside `SupervisorAgent.kickoff` (a 1-node DAG on the matched
+  `TaskType`), not a new dispatch mechanism, since `TaskType -> Agent` dispatch already existed.
+  Deliberately not an LLM classifier: it must behave identically with or without a configured model
+  provider.
+- **Business Health, Recommendations, Timeline** (`Application/Founders/Queries/`) are pure
+  functions over the CompanyProfile and existing `Artifact`/`WorkflowRun` tables — no scores are
+  ever invented; every category explains exactly which fields are missing, and every timeline
+  milestone is a real artifact's real creation timestamp.
+- **Onboarding** (`app/founder/onboarding/page.tsx`) is a 9-question guided wizard, not an
+  LLM-parsed free-text chat — deliberately, since the Smart Agents work above already shows the
+  mock provider can't reliably extract structured JSON, and these are exactly the fields the
+  dashboard's KPIs depend on.
+
+**Known gap, tracked rather than hidden:** there is no `BusinessProfile`-style history/versioning —
+`CompanyProfile` is always "the current state," so a founder can't yet see how, say, their pricing
+strategy evolved over time (only *that* it changed, via the Business Timeline's artifact
+milestones).
+
 ## Where to go next
 
 - [Execution Flow](EXECUTION_FLOW.md) — what happens from "submit a goal" to "workflow complete," with the DAG diagram.

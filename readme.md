@@ -4,12 +4,16 @@
 supervised fleet of AI specialists runs your company for you. Today there are two: the original
 **Software Company** (submit a one-line goal like *"Build a Task Management SaaS"* and watch it
 become requirements, architecture, backend/frontend code, a code review, and a QA pass), and the
-new **Founder Workspace** (submit a business idea and watch 11 AI specialists — CEO, Business
-Analyst, Market/Customer Research, Brand, Finance, Marketing, Operations, Sales, Growth, Legal —
-turn it into a business model canvas, brand identity, financial projection, marketing plan, and
-launch strategy). Both run on the same shared platform, coordinated through a dynamically generated
-DAG, with every decision, reasoning stage, and artifact observable live in each Workspace's own
-dashboard.
+new **Founder Workspace** — a business operating system, not a dashboard. A guided onboarding
+flow builds a persistent Company Profile once; from then on, 11 AI specialists (CEO, Business
+Analyst, Market/Customer Research, Brand, Finance, Marketing, Operations, Sales, Growth, Legal)
+already know the business on every request — no re-explaining, ever — and either run a full
+venture-framing pass or, once the profile exists, answer a focused ask ("Create Instagram content",
+"Should I increase prices?") with just the one relevant specialist. Every agent both reads from and
+writes back to that Company Profile, and a real (never fabricated) Business Health score, gap-driven
+recommendations, and a milestone timeline all derive from it. Both Workspaces run on the same shared
+platform, coordinated through a dynamically generated DAG, with every decision, reasoning stage, and
+artifact observable live in each Workspace's own dashboard.
 
 <p align="center">
   <img src="docs/screenshots/03-execution-graph.png" alt="Mission Control — live execution graph" width="850">
