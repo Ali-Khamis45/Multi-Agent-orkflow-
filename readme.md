@@ -43,17 +43,23 @@ Three cooperating services:
   through.
 - **`ai-runtime/`** — Python/FastAPI service that is the system's "brain":
   intent analysis, a 12-stage reasoning pipeline per agent invocation, the
-  Supervisor Brain (which dynamically expands the task DAG as work
+  Supervisor Brain (which dynamically expands the task DAG — or, for a
+  focused Founder request, routes to a single specialist — as work
   completes), a multi-model router (falls back to a deterministic mock
   provider if no API key is configured — the whole system runs end-to-end
-  with zero external dependencies), and seven specialist agents (Business
-  Analyst, Project Manager, System Architect, Backend/Frontend Engineer,
-  Code Reviewer, QA Engineer).
-- **`frontend/`** — **Mission Control**, a Next.js 16 / React 19 dashboard.
-  It talks *only* to the ASP.NET API and its SignalR hub — never to the
-  Python runtime directly — and renders everything the platform does:
-  the live execution graph, per-agent reasoning traces, supervisor
-  decisions, artifacts, memory, telemetry, and more.
+  with zero external dependencies), and 18 specialist agents: seven for the
+  Software Company (Business Analyst, Project Manager, System Architect,
+  Backend/Frontend Engineer, Code Reviewer, QA Engineer) and eleven for the
+  Founder Workspace (CEO, Business Analyst, Market/Customer Research, Brand
+  Strategist, Financial Advisor, Marketing Director, Operations Manager,
+  Sales Strategist, Growth Strategist, Legal Advisor).
+- **`frontend/`** — a Next.js 16 / React 19 app with two workspace shells
+  behind auth: **Mission Control** for the Software Company (live execution
+  graph, per-agent reasoning traces, supervisor decisions, artifacts, memory,
+  telemetry) and the **Founder Workspace** (onboarding, Company Profile,
+  Business Health, recommendations, timeline) — plus a shared Connector
+  Marketplace for both. It talks *only* to the ASP.NET API and its SignalR
+  hub — never to the Python runtime directly.
 
 See [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md) for the
 full system design (with diagrams), [ARCHITECTURE.md](ARCHITECTURE.md) for
@@ -78,16 +84,25 @@ npm run dev                   # http://localhost:3000
 No API keys are required. `ai-runtime`'s Multi-Model Router runs entirely on
 a deterministic mock provider unless `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` /
 `GEMINI_API_KEY` / `OLLAMA_HOST` is set (see `ai-runtime/.env.example`), so a
-fresh clone can run a full pipeline immediately.
+fresh clone can run a full pipeline immediately — likewise, no external
+service credentials are required for the Connector Framework to work: every
+connector runs against the real vendor API when configured, and gracefully
+mock-falls-back when it isn't (see `Connectors` in `api/appsettings.json`).
 
 First visit redirects to `/register` — create an account and choose your
-Workspace (Software Company or Founder Workspace). This choice is permanent:
-it decides which dashboard, agents, and pipeline you get for that account.
+Workspace. This choice is permanent: it decides which dashboard, agents, and
+pipeline you get for that account.
 
-**Fastest way to see it work:** open the dashboard and click **Run demo** on
-the Portfolio Demo banner — it submits *"Build a Task Management SaaS"* to
-the real intake pipeline and follows the run live. It completes in well
-under a minute.
+- **Software Company** — land straight on Mission Control. **Fastest way to
+  see it work:** click **Run demo** on the Portfolio Demo banner — it submits
+  *"Build a Task Management SaaS"* to the real intake pipeline and follows
+  the run live. Completes in well under a minute.
+- **Founder Workspace** — a short onboarding wizard runs first (business
+  name, location, problem, customers, budget, launch date); then describe a
+  business idea on the dashboard and watch the 11-agent pipeline build a
+  Business Model Canvas, brand identity, financial projection, marketing
+  plan, and launch strategy — each agent reading from and writing back to
+  the same Company Profile, so a second request never has to repeat context.
 
 ## Mission Control tour
 
@@ -106,6 +121,16 @@ command palette** that searches agents/runs/artifacts/prompts and can replay
 a past run, and an **export menu** on every run (execution summary, graph,
 artifacts, reasoning trace, and telemetry as JSON or Markdown).
 
+The screenshots above are all Mission Control (Software Company) — the newer
+**Founder Workspace** (onboarding wizard, Company Profile-backed dashboard
+with a real Business Health score, gap-driven recommendations, and a
+milestone timeline — see the
+[Phase 3 write-up](docs/architecture/OVERVIEW.md#phase-3--ai-company-operating-system-company-memory))
+and the **Connector Marketplace** (browse/install/disconnect/monitor, shared
+by both Workspaces — see the
+[Phase 4 write-up](docs/architecture/OVERVIEW.md#phase-4--connector-framework-real-business-systems))
+don't have screenshots here yet, but are live end-to-end.
+
 ## Tech stack
 
 **Backend:** ASP.NET Core 10 · MediatR/CQRS · EF Core + Npgsql · FluentValidation · SignalR · Redis Streams (event bus)
@@ -120,7 +145,7 @@ Full breakdown with rationale: [docs/architecture/OVERVIEW.md § Folder structur
 ```
 api/            ASP.NET Core orchestration service (Clean Architecture)
 ai-runtime/     Python FastAPI "brain" — agents, reasoning pipeline, Supervisor Brain
-frontend/       Mission Control — Next.js dashboard
+frontend/       Next.js app — Mission Control + Founder Workspace + Connector Marketplace
 docs/           Everything below
 ```
 
