@@ -18,4 +18,8 @@ class FounderLegalAdvisorAgent(AgentBase):
         content = await self.generate(
             ctx, "founder_legal_advisor", goal=ctx.inputs.get("goal", ""), context=ctx.context_data or "(none provided)"
         )
+        await self.update_company_profile(
+            ctx, "business", content,
+            {"launchDate": "an ISO 8601 date (YYYY-MM-DD) if a launch date is implied, else null", "notes": "2-3 sentence legal/compliance readiness summary"},
+        )
         return await self.produce_artifact(ctx, name="LaunchStrategy", artifact_type="Markdown", content=content)

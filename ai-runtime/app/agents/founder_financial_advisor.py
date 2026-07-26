@@ -18,4 +18,13 @@ class FounderFinancialAdvisorAgent(AgentBase):
         content = await self.generate(
             ctx, "founder_financial_advisor", goal=ctx.inputs.get("goal", ""), context=ctx.context_data or "(none provided)"
         )
+        await self.update_company_profile(
+            ctx, "business", content,
+            {
+                "budget": "estimated starting budget as a plain number (no currency symbol), or null if not estimated",
+                "monthlyRevenueGoal": "estimated monthly revenue goal as a plain number, or null if not estimated",
+                "fundingStatus": "one short phrase describing funding status, e.g. Bootstrapped, Seed-stage, Seeking investment",
+                "notes": "2-3 sentence summary of cash flow and pricing considerations",
+            },
+        )
         return await self.produce_artifact(ctx, name="FinancialProjection", artifact_type="Markdown", content=content)

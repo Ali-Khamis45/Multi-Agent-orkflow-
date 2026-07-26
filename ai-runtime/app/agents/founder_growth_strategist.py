@@ -18,4 +18,8 @@ class FounderGrowthStrategistAgent(AgentBase):
         content = await self.generate(
             ctx, "founder_growth_strategist", goal=ctx.inputs.get("goal", ""), context=ctx.context_data or "(none provided)"
         )
+        await self.update_company_profile(
+            ctx, "business", content,
+            {"growthGoal": "one sentence growth goal synthesizing finance/marketing/ops/sales", "notes": "2-3 sentence growth roadmap summary"},
+        )
         return await self.produce_artifact(ctx, name="GrowthRoadmap", artifact_type="Markdown", content=content)

@@ -6,6 +6,7 @@ this codebase is allowed to open a database connection directly.
 
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any
 
@@ -240,6 +241,27 @@ class ApiClient:
         )
         r.raise_for_status()
         return r.json()
+
+    # ---- Company Profile / Company Memory (Phase 3 "AI Company Operating System") ----
+    async def get_company_profile(self, workspace_id: uuid.UUID) -> dict[str, Any]:
+        headers = {"X-Internal-Service-Key": self._internal_service_key} if self._internal_service_key else {}
+        r = await self._http.get(
+            "/api/company-profile", params={"workspaceId": str(workspace_id)}, headers=headers
+        )
+        r.raise_for_status()
+        body = r.json()
+        return json.loads(body["profileJson"])
+
+    async def patch_company_profile_section(
+        self, workspace_id: uuid.UUID, section: str, patch: dict[str, Any]
+    ) -> None:
+        headers = {"X-Internal-Service-Key": self._internal_service_key} if self._internal_service_key else {}
+        r = await self._http.patch(
+            "/api/company-profile/section",
+            json={"workspaceId": str(workspace_id), "section": section, "patch": patch},
+            headers=headers,
+        )
+        r.raise_for_status()
 
     # ---- Reasoning Engine traces / unified telemetry (§E6, Phase 1.5 §1) ----
     async def record_reasoning_trace(

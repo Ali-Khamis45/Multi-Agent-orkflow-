@@ -17,4 +17,8 @@ class FounderCeoAgent(AgentBase):
         content = await self.generate(
             ctx, "founder_ceo", goal=ctx.inputs.get("goal", ""), context=ctx.context_data or "(none provided)"
         )
+        await self.update_company_profile(
+            ctx, "business", content,
+            {"growthGoal": "one sentence overall growth ambition for the business", "notes": "2-3 sentence synthesis of the business vision and direction"},
+        )
         return await self.produce_artifact(ctx, name="ExecutiveSummary", artifact_type="Markdown", content=content)

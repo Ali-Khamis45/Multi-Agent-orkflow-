@@ -18,4 +18,13 @@ class FounderOperationsManagerAgent(AgentBase):
         content = await self.generate(
             ctx, "founder_operations_manager", goal=ctx.inputs.get("goal", ""), context=ctx.context_data or "(none provided)"
         )
+        await self.update_company_profile(
+            ctx, "operations", content,
+            {
+                "suppliers": "array of short strings, supplier types or names recommended",
+                "inventoryStrategy": "one short phrase describing the inventory approach",
+                "shipping": "one short phrase describing the shipping/fulfillment approach",
+                "notes": "2-3 sentence operational risk summary",
+            },
+        )
         return await self.produce_artifact(ctx, name="OperationsPlan", artifact_type="Markdown", content=content)

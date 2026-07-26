@@ -26,6 +26,24 @@ from app.tools.registry import ToolRegistry
 T = TypeVar("T")
 
 
+def _parse_json_object(text: str) -> dict[str, Any] | None:
+    """Best-effort JSON extraction from an LLM response — strips common ```json
+    markdown fences a real model sometimes wraps its answer in, then parses. Returns
+    None (never raises) on anything that isn't a clean JSON object, since the caller's
+    fallback (a `notes` field) is always safe."""
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`")
+        if cleaned.lower().startswith("json"):
+            cleaned = cleaned[4:]
+        cleaned = cleaned.strip()
+    try:
+        parsed = json.loads(cleaned)
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
 class AgentBase(ABC):
     name: str
     version: str = "0.1.0"
@@ -70,6 +88,7 @@ class AgentBase(ABC):
             tools=tools,
             model_router=model_router,
             event_bus=event_bus,
+            company_type=self.company_type,
         )
 
     def manifest(self) -> dict[str, Any]:
@@ -193,6 +212,49 @@ class AgentBase(ABC):
             artifact_type=artifact_type,
             extra_outputs={"artifactId": result.output["artifactId"], **(extra_outputs or {})},
         )
+
+    async def update_company_profile(
+        self, ctx: AgentContext, section: str, content: str, field_hints: dict[str, str]
+    ) -> None:
+        """Phase 3 "Smart Agents": every Founder agent writes what it learned back into
+        Company Memory, not just into its own artifact — see
+        api/Domain/Founders/CompanyProfileJson.cs for the section shapes. Asks the model
+        to extract `field_hints` (field name -> what to put there) as JSON from the
+        agent's own generated `content`; if that doesn't parse as JSON (e.g. the mock
+        provider's placeholder text, or a real model that ignored the instruction), the
+        whole content degrades into the section's `notes` field instead of being lost or
+        corrupting a typed field — see CompanyProfile.ApplySectionPatch's merge-patch
+        semantics, which leaves every field this patch doesn't mention untouched."""
+        if self.company_type != "Founder":
+            return
+
+        patch: dict[str, Any] | None = None
+        try:
+            extraction_prompt = (
+                "Extract these fields as a single flat JSON object — use null for anything "
+                f"not mentioned in the source text: {json.dumps(field_hints)}.\n\n"
+                f"Source text:\n{content[:3000]}\n\n"
+                "Respond with ONLY the JSON object. No markdown fences, no commentary."
+            )
+            response = await self.model_router.complete(
+                self.name,
+                system_prompt="You extract structured data from text and respond with pure JSON only.",
+                user_prompt=extraction_prompt,
+            )
+            ctx.record_model_usage(response.model, response.tokens, response.cost_estimate)
+            patch = _parse_json_object(response.text)
+        except Exception:
+            self.logger.warning("company profile extraction failed", extra={"fields": {"agent": self.name, "section": section}})
+
+        if not patch:
+            patch = {"notes": content[:500]}
+
+        try:
+            await self.api.patch_company_profile_section(ctx.workspace_id, section, patch)
+        except Exception:
+            self.logger.warning(
+                "failed to update company profile", extra={"fields": {"agent": self.name, "section": section}}
+            )
 
     async def retry(self, fn: Callable[[], Awaitable[T]], attempts: int = 2, delay_seconds: float = 1.0) -> T:
         """Generic retry helper for sub-operations within Execute (e.g. a flaky

@@ -29,6 +29,7 @@ from typing import Any
 
 from app.clients.api_client import ApiClient
 from app.clients.event_bus import RedisEventBus
+from app.founders.profile_context import render_company_profile_context
 from app.logging_config import get_logger, log_fields
 from app.memory.memory_client import MemoryClient
 from app.models.event_envelope import EventEnvelope, EventTypes
@@ -122,6 +123,7 @@ class ReasoningPipeline:
         tools: ToolRegistry,
         model_router: ModelRouter,
         event_bus: RedisEventBus,
+        company_type: str = "SoftwareCompany",
     ) -> None:
         self._agent_name = agent_name
         self._agent_capability = agent_capability
@@ -131,6 +133,7 @@ class ReasoningPipeline:
         self._tools = tools
         self._router = model_router
         self._event_bus = event_bus
+        self._company_type = company_type
 
     async def run(self, ctx: AgentContext, execute_fn: ExecuteFn) -> None:
         try:
@@ -185,9 +188,23 @@ class ReasoningPipeline:
         """Resolves upstream artifacts by NAME within this WorkflowRun, not by ID —
         a DAG node's InputsJson is fixed at node-creation time, before any
         predecessor (possibly a parallel one, e.g. Backend + Frontend feeding
-        Code Reviewer) has actually produced its output artifact."""
-        upstream_names = ctx.inputs.get("upstreamArtifactNames") or []
+        Code Reviewer) has actually produced its output artifact.
+
+        Phase 3 "Company Memory": Founder agents additionally get the workspace's
+        whole CompanyProfile prepended, so no agent ever asks the founder to
+        re-explain their business — see app/founders/profile_context.py."""
         parts: list[str] = []
+
+        if self._company_type == "Founder":
+            try:
+                profile = await self._api.get_company_profile(ctx.workspace_id)
+                rendered = render_company_profile_context(profile)
+                if rendered:
+                    parts.append(rendered)
+            except Exception:
+                logger.warning("could not retrieve company profile", extra={"fields": {"workspace_id": str(ctx.workspace_id)}})
+
+        upstream_names = ctx.inputs.get("upstreamArtifactNames") or []
         for artifact_name in upstream_names:
             try:
                 artifact = await self._api.get_latest_artifact_by_name(ctx.workflow_run_id, artifact_name)

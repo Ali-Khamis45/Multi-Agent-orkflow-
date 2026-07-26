@@ -18,4 +18,8 @@ class FounderBusinessAnalystAgent(AgentBase):
         content = await self.generate(
             ctx, "founder_business_analyst", goal=ctx.inputs.get("goal", ""), context=ctx.context_data or "(none provided)"
         )
+        await self.update_company_profile(
+            ctx, "business", content,
+            {"revenueModel": "one short phrase describing how the business makes money", "notes": "2-3 sentence business model summary"},
+        )
         return await self.produce_artifact(ctx, name="BusinessModelCanvas", artifact_type="Markdown", content=content)

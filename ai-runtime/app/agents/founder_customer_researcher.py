@@ -18,4 +18,12 @@ class FounderCustomerResearcherAgent(AgentBase):
         content = await self.generate(
             ctx, "founder_customer_researcher", goal=ctx.inputs.get("goal", ""), context=ctx.context_data or "(none provided)"
         )
+        await self.update_company_profile(
+            ctx, "customers", content,
+            {
+                "personas": "array of objects {name, description} for each customer persona defined",
+                "problems": "array of short strings, customer problems/pain points identified",
+                "goals": "array of short strings, customer goals identified",
+            },
+        )
         return await self.produce_artifact(ctx, name="CustomerPersonas", artifact_type="Markdown", content=content)

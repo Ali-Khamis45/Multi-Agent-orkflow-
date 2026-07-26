@@ -18,4 +18,8 @@ class FounderSalesStrategistAgent(AgentBase):
         content = await self.generate(
             ctx, "founder_sales_strategist", goal=ctx.inputs.get("goal", ""), context=ctx.context_data or "(none provided)"
         )
+        await self.update_company_profile(
+            ctx, "products", content,
+            {"pricingStrategy": "one short phrase describing the pricing/sales approach", "notes": "2-3 sentence sales channel summary"},
+        )
         return await self.produce_artifact(ctx, name="SalesStrategy", artifact_type="Markdown", content=content)
